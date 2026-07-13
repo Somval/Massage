@@ -1,0 +1,81 @@
+.how-hero {
+  padding: 150px 0 70px;
+  text-align: left;
+}
+
+.how-hero h1 {
+  color: var(--white);
+  font-size: clamp(32px, 5vw, 50px);
+  margin-top: 16px;
+  max-width: 620px;
+}
+
+.how-steps__list {
+  display: flex;
+  flex-direction: column;
+  max-width: 720px;
+}
+
+.how-step {
+  display: flex;
+  gap: 28px;
+  position: relative;
+  padding-bottom: 48px;
+}
+
+.how-step__num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--red);
+  flex-shrink: 0;
+  width: 56px;
+}
+
+.how-step__body h3 {
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.how-step__body p {
+  font-size: 14.5px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  max-width: 480px;
+}
+
+.how-step__connector {
+  position: absolute;
+  left: 27px;
+  top: 40px;
+  bottom: 8px;
+  width: 1.5px;
+  background: linear-gradient(var(--red), transparent);
+  opacity: 0.35;
+}
+
+.how-cta {
+  background: var(--navy-deep);
+  text-align: center;
+}
+
+.how-cta__inner h2 {
+  color: var(--white);
+  font-size: clamp(26px, 3.6vw, 36px);
+  margin-bottom: 28px;
+}
+
+@media (max-width: 560px) {
+  .how-step {
+    gap: 18px;
+  }
+  .how-step__num {
+    width: 40px;
+    font-size: 22px;
+  }
+  .how-step__connector {
+    left: 19px;
+  }
+}
