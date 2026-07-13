@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import 'leaflet/dist/leaflet.css';
 import logoMark from '../images/logo-mark.png';
+import chidi from '../images/Chidi.jpeg';
+import ada from '../images/Ada.jpg';
+import ugo from '../images/ugo.jpg';
+import amaka from '../images/Amaka.jpg';
 
 const NAV = [
   { key: 'overview', label: 'Overview', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
@@ -13,10 +18,10 @@ const NAV = [
 ];
 
 const THERAPISTS = [
-  { name: 'Diana', img: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop' },
-  { name: 'Chidi', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=100&h=100&fit=crop' },
-  { name: 'Ada', img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop' },
-  { name: 'Femi', img: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?w=100&h=100&fit=crop' },
+  { name: 'Chidi', img: chidi },
+  { name: 'Amaka', img: amaka },
+  { name: 'Ada', img: ada },
+  { name: 'Ugo', img: ugo },
 ];
 
 const TREATMENTS = ['Swedish Massage', 'Deep Tissue', 'Hot Stone Therapy', 'Aromatherapy', 'Sports Recovery', 'Prenatal Massage'];
@@ -31,10 +36,10 @@ const CATEGORIES = [
 ];
 
 const FEATURED = [
-  { name: 'Maria', service: 'Swedish · 7+ yrs', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300&h=340&fit=crop' },
-  { name: 'Diana', service: 'Deep Tissue · 6+ yrs', img: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=300&h=340&fit=crop' },
-  { name: 'Ada', service: 'Aromatherapy · 5+ yrs', img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=340&fit=crop' },
-  { name: 'Femi', service: 'Sports · 8+ yrs', img: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?w=300&h=340&fit=crop' },
+  { name: 'Chidi', service: 'Swedish · 7+ yrs', img:chidi },
+  { name: 'Ugo', service: 'Deep Tissue · 6+ yrs', img: ugo },
+  { name: 'Ada', service: 'Aromatherapy · 5+ yrs', img: ada },
+  { name: 'Amaka', service: 'Sports · 8+ yrs', img: amaka },
 ];
 
 const INITIAL_BOOKINGS = [
@@ -56,7 +61,7 @@ const STATS = [
   { label: 'Upcoming Sessions', key: 'upcoming', icon: 'M3 5h18M3 5a2 2 0 002 2h14a2 2 0 002-2M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5' },
   { label: 'Completed Sessions', key: 'completed', icon: 'M5 12l5 5 9-10' },
   { label: 'Reward Points', value: '2,350', icon: 'M12 2l2.5 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.5-.5z' },
-  { label: 'Favorite Therapists', value: '4', icon: 'M20 12c0 4-3.6 7-8 9-4.4-2-8-5-8-9a4 4 0 018-1.5A4 4 0 0120 12z' },
+  { label: 'Favorite Masseuses', value: '4', icon: 'M20 12c0 4-3.6 7-8 9-4.4-2-8-5-8-9a4 4 0 018-1.5A4 4 0 0120 12z' },
 ];
 
 function BookingModal({ onClose, onCreate }) {
@@ -79,7 +84,7 @@ function BookingModal({ onClose, onCreate }) {
         <p>Choose your therapist, treatment and time — we'll confirm within minutes.</p>
         <form onSubmit={submit}>
           <div className="modal-field">
-            <label>Therapist</label>
+            <label>Masseuse</label>
             <select value={form.therapist} onChange={update('therapist')}>
               {THERAPISTS.map((t) => <option key={t.name}>{t.name}</option>)}
             </select>
@@ -111,89 +116,145 @@ function BookingModal({ onClose, onCreate }) {
   );
 }
 
+const MASSEUSE_INFO = {
+  Diana: { rating: '4.9', reviews: 128, years: '6+ Years Experience' },
+  Chidi: { rating: '4.8', reviews: 96, years: '5 Years Experience' },
+  Ada: { rating: '5.0', reviews: 140, years: '8 Years Experience' },
+  Femi: { rating: '4.9', reviews: 110, years: '7 Years Experience' },
+  Maria: { rating: '4.9', reviews: 128, years: '7+ Years Experience' },
+};
+
 const TRACK_STEPS = ['Booked', 'Confirmed', 'On the way', 'Arrived', 'Completed'];
 
-function TrackingPanel({ booking }) {
-  if (!booking) {
-    return (
-      <div className="dash-panel">
-        <div className="no-active-track">
-          <div className="ep-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></svg></div>
-          <h4>Nothing to track right now</h4>
-          <p>Once a therapist confirms an upcoming booking, you'll be able to watch them arrive here in real time.</p>
-        </div>
-      </div>
-    );
-  }
+const MAP_CATEGORIES = ['All', 'Swedish', 'Deep Tissue', 'Aromatherapy', 'Hot Stone', 'Sports'];
 
-  const activeIndex = 2; // "On the way"
+const NEARBY_MASSEUSES = [
+  { name: 'Diana', rating: '4.9', reviews: 128, years: '6+ Years Experience', tags: 'Swedish · Deep Tissue · Aromatherapy', price: '₦24,000', away: '5 min away', available: true, img: THERAPISTS[0].img, area: 'Ikeja', lat: 6.6018, lng: 3.3515 },
+  { name: 'Chidi', rating: '4.8', reviews: 96, years: '5 Years Experience', tags: 'Sports · Hot Stone', price: '₦24,000', away: '5 min away', available: false, img: THERAPISTS[1].img, area: 'Lekki Phase 1', lat: 6.4392, lng: 3.4675 },
+  { name: 'Ada', rating: '5.0', reviews: 140, years: '8 Years Experience', tags: 'Aromatherapy · Prenatal', price: '₦24,000', away: '5 min away', available: false, img: THERAPISTS[2].img, area: 'Yaba', lat: 6.5158, lng: 3.3707 },
+  { name: 'Femi', rating: '4.9', reviews: 110, years: '7 Years Experience', tags: 'Deep Tissue · Sports', price: '₦24,000', away: '5 min away', available: true, img: THERAPISTS[3].img, area: 'Surulere', lat: 6.5059, lng: 3.3620 },
+  { name: 'Maria', rating: '4.9', reviews: 128, years: '7+ Years Experience', tags: 'Swedish · Deep Tissue', price: '₦24,000', away: '5 min away', available: false, img: FEATURED[2].img, area: 'Ikoyi', lat: 6.4547, lng: 3.4340 },
+];
+
+function LagosMap({ masseuses, selected, onSelect }) {
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const markersRef = useRef({});
+
+  useEffect(() => {
+    let cancelled = false;
+    import('leaflet').then((L) => {
+      if (cancelled || !mapRef.current || mapInstance.current) return;
+      const map = L.map(mapRef.current, { zoomControl: false, attributionControl: true }).setView([6.5, 3.42], 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+      }).addTo(map);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      mapInstance.current = map;
+
+      masseuses.forEach((m) => {
+        const icon = L.divIcon({
+          className: '',
+          html: `<div class="leaflet-pin ${m.available ? 'available' : 'busy'}"><div class="leaflet-pin-avatar"><img src="${m.img}" /></div><div class="leaflet-pin-price"><b>${m.price}</b><span>${m.away}</span></div></div>`,
+          iconSize: [1, 1],
+          iconAnchor: [30, 62],
+        });
+        const marker = L.marker([m.lat, m.lng], { icon }).addTo(map);
+        marker.on('click', () => onSelect(m));
+        markersRef.current[m.name] = marker;
+      });
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (mapInstance.current && selected) {
+      mapInstance.current.flyTo([selected.lat, selected.lng], 13, { duration: 0.6 });
+    }
+  }, [selected]);
+
+  useEffect(() => {
+    const visibleNames = new Set(masseuses.map((m) => m.name));
+    Object.entries(markersRef.current).forEach(([name, marker]) => {
+      const el = marker.getElement();
+      if (el) el.style.display = visibleNames.has(name) ? '' : 'none';
+    });
+  }, [masseuses]);
+
+  return <div className="leaflet-map-el" ref={mapRef} />;
+}
+
+function TrackingPanel({ booking }) {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const [selected, setSelected] = useState(NEARBY_MASSEUSES[0]);
+
+  const filtered = NEARBY_MASSEUSES.filter((m) => {
+    const matchesCategory = category === 'All' || m.tags.toLowerCase().includes(category.toLowerCase());
+    const matchesQuery = query.trim() === '' || m.name.toLowerCase().includes(query.toLowerCase()) || m.tags.toLowerCase().includes(query.toLowerCase()) || m.area.toLowerCase().includes(query.toLowerCase());
+    return matchesCategory && matchesQuery;
+  });
 
   return (
-    <div className="dash-panel">
-      <div className="track-map">
-        <div className="track-badge"><span className="dot" /> {booking.name} is on the way</div>
-        <svg className="route" viewBox="0 0 400 320">
-          <path className="route-line" d="M70 250 C 140 210, 150 140, 230 110 S 330 60, 340 40" />
-        </svg>
-        <div className="track-pin" style={{ left: '17%', top: '78%' }}>
-          <div className="pin-pulse" />
-          <div className="pin-dot"><img src={booking.img} alt={booking.name} /></div>
+    <div className="track-wrap">
+    <div className="dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="map-search-bar">
+        <div className="map-search-input">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.35-4.35" /></svg>
+          <input type="text" placeholder="Search masseuse, specialities, location..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
-        <div className="track-pin home" style={{ left: '85%', top: '13%' }}>
-          <div className="pin-dot">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 11l9-8 9 8M5 10v10h14V10" /></svg>
-          </div>
-        </div>
+        <button className="map-filter-btn" aria-label="Filters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+        </button>
       </div>
 
-      <div className="track-eta-bar">
-        <div>
-          <span>Estimated Arrival</span>
-          <b className="eta-highlight">8 mins</b>
-        </div>
-        <div>
-          <span>Status</span>
-          <b>On the way</b>
-        </div>
-        <div>
-          <span>Booking ID</span>
-          <b>#MNW-{String(booking.id).slice(-6)}</b>
-        </div>
-      </div>
-
-      <div className="track-stepper">
-        {TRACK_STEPS.map((s, i) => (
-          <div className={`track-step ${i < activeIndex ? 'done' : i === activeIndex ? 'active' : ''}`} key={s}>
-            <div className="ts-dot">
-              {i < activeIndex ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12l5 5 9-10" /></svg>
-              ) : i === activeIndex ? (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6" /></svg>
-              ) : null}
-            </div>
-            <span>{s}</span>
-          </div>
+      <div className="map-cat-row">
+        {MAP_CATEGORIES.map((c) => (
+          <button key={c} className={`map-cat-pill ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
         ))}
       </div>
 
-      <div className="track-therapist">
-        <img src={booking.img} alt={booking.name} />
-        <div className="track-therapist-body">
-          <h5>{booking.name}</h5>
-          <span>{booking.service} · {booking.location}</span>
-        </div>
-        <div className="track-therapist-actions">
-          <a href="#" aria-label="Message"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 11.5a8.4 8.4 0 01-9 8.4A8.9 8.9 0 013 12a8.4 8.4 0 019-8.5 8.6 8.6 0 019 8z" /></svg></a>
-          <a href="#" aria-label="Call"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.7a2 2 0 01-.4 2.1L8 9.9a16 16 0 006 6l1.4-1.4a2 2 0 012.1-.4c.9.3 1.8.5 2.7.6a2 2 0 011.8 2.2z" /></svg></a>
-        </div>
+      <div className="map-legend">
+        <span><i className="dot available" /> Available</span>
+        <span><i className="dot busy" /> Busy</span>
       </div>
+
+      <div className="track-map">
+        <LagosMap masseuses={filtered} selected={selected} onSelect={setSelected} />
+      </div>
+
+      <div className="map-sheet">
+        <div className="dash-panel-head" style={{ padding: '18px 20px 8px' }}>
+          <h3>Nearby Masseuses</h3>
+          <a href="#" onClick={(e) => { e.preventDefault(); }}>View All</a>
+        </div>
+        <p style={{ padding: '0 20px 10px', margin: 0, fontSize: 12.5, color: 'var(--text-mute)' }}>Available now</p>
+        {filtered.map((m) => (
+          <div className={`booking-list-item map-list-item ${selected?.name === m.name ? 'selected' : ''}`} key={m.name} onClick={() => setSelected(m)} style={{ cursor: 'pointer' }}>
+            <div className="bli-avatar"><img src={m.img} alt={m.name} /></div>
+            <div className="bli-body">
+              <h5>{m.name} <span className="bli-area">· {m.area}</span></h5>
+              <span>★ {m.rating} ({m.reviews}) · {m.years}</span>
+              <span style={{ display: 'block', marginTop: 2 }}>{m.tags}</span>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--red)', fontSize: 14 }}>{m.price}</div>
+              <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>{m.away}</span>
+              <button className="btn btn-red" style={{ padding: '7px 14px', marginTop: 8, fontSize: 11, width: 'auto' }} onClick={(e) => { e.stopPropagation(); }}>View Profile</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
     </div>
   );
 }
 
 const NOTIFICATIONS = [
   { title: 'Booking confirmed', body: 'Diana confirmed your Swedish Massage for Wed, 22 May.', time: '2h ago' },
-  { title: 'Therapist on the way', body: 'Maria is on the way — 8 mins to Ikeja GRA.', time: '5h ago' },
+  { title: 'Masseuse on the way', body: 'Maria is on the way — 8 mins to Ikeja GRA.', time: '5h ago' },
   { title: 'Wallet top up successful', body: '₦50,000 was added to your wallet.', time: '1d ago' },
 ];
 
@@ -260,7 +321,7 @@ export default function Dashboard() {
         </nav>
         <div className="dash-sidebar-foot">
           <div className="dash-user">
-            <div className="dash-user-avatar"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" alt="Amara Okafor" /></div>
+            <div className="dash-user-avatar"><img src={ada} alt="Amara Okafor" /></div>
             <div>
               <h5>Amara Okafor</h5>
               <span>amara@gmail.com</span>
@@ -283,7 +344,7 @@ export default function Dashboard() {
               <p>
                 {tab === 'overview' && 'Lekki Phase 1, Lagos'}
                 {tab === 'bookings' && 'View and manage all your massage appointments.'}
-                {tab === 'track' && "Watch your therapist's live location and ETA."}
+                {tab === 'track' && "Watch your masseuse's live location and ETA."}
                 {tab === 'wallet' && 'Securely top up, pay for bookings, and track every transaction.'}
                 {tab === 'messages' && 'Stay connected with your therapists.'}
                 {tab === 'favorites' && 'Your saved therapists, ready to rebook.'}
@@ -419,7 +480,7 @@ export default function Dashboard() {
                 </a>
                 <a href="#" className="quick-action" onClick={(e) => { e.preventDefault(); setTab('messages'); }}>
                   <div className="qa-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.4 8.4 0 01-9 8.4A8.9 8.9 0 013 12a8.4 8.4 0 019-8.5 8.6 8.6 0 019 8z" /></svg></div>
-                  <span>Message Therapist</span>
+                  <span>Message Masseuse</span>
                 </a>
                 <a href="#" className="quick-action" onClick={(e) => { e.preventDefault(); setTab('wallet'); }}>
                   <div className="qa-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" /></svg></div>
@@ -442,7 +503,7 @@ export default function Dashboard() {
               <button className={`dash-tab-pill ${bookingFilter === 'completed' ? 'active' : ''}`} onClick={() => setBookingFilter('completed')}>Completed ({completed.length})</button>
               <button className={`dash-tab-pill ${bookingFilter === 'favourites' ? 'active' : ''}`} onClick={() => setBookingFilter('favourites')}>Favourites ({THERAPISTS.length})</button>
             </div>
-            <div className="dash-panel">
+            <div className={bookingFilter === 'favourites' ? 'dash-panel' : 'booking-card-list'}>
               {bookingFilter === 'favourites' ? (
                 THERAPISTS.map((t) => (
                   <div className="booking-list-item" key={t.name}>
@@ -457,29 +518,60 @@ export default function Dashboard() {
               ) : (
                 <>
                   {bookingsForFilter.length === 0 && (
-                    <div className="empty-panel">
+                    <div className="empty-panel dash-panel">
                       <div className="ep-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 5h18M3 5a2 2 0 002 2h14a2 2 0 002-2M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5" /></svg></div>
                       <h4>No {bookingFilter} bookings yet</h4>
                       <p>When you book a session, it'll show up here so you can track it from request to arrival.</p>
                     </div>
                   )}
-                  {bookingsForFilter.map((b) => (
-                    <div className="booking-list-item" key={b.id} style={{ alignItems: 'flex-start' }}>
-                      <div className="bli-avatar" style={{ width: 56, height: 56 }}><img src={b.img} alt={b.name} /></div>
-                      <div className="bli-body">
-                        <h5>{b.service} with {b.name}</h5>
-                        <span>{b.date}</span>
-                        <span style={{ display: 'block', marginTop: 2 }}>{b.location}</span>
+                  {bookingsForFilter.map((b) => {
+                    const info = MASSEUSE_INFO[b.name] || { rating: '4.9', reviews: 100, years: 'Experienced' };
+                    const [datePart, timePart] = b.date.split('·').map((s) => s && s.trim());
+                    const [locLabel, locAddress] = b.location.split('·').map((s) => s && s.trim());
+                    return (
+                      <div className="booking-card" key={b.id}>
+                        <div className="booking-card-top">
+                          <div className="bc-avatar"><img src={b.img} alt={b.name} /></div>
+                          <div className="bc-info">
+                            <div className="bc-info-head">
+                              <h5>{b.name}</h5>
+                              <span className={`bli-status ${b.status}`}>{b.status}</span>
+                            </div>
+                            <span className="bc-rating">★ {info.rating} ({info.reviews}) · {info.years}</span>
+                            <span className="bc-tags">{b.service}</span>
+                          </div>
+                        </div>
+                        <div className="booking-card-row">
+                          <div className="bc-meta">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 5h18M3 5a2 2 0 002 2h14a2 2 0 002-2M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5" /></svg>
+                            <div><span>Date</span><b>{datePart}</b></div>
+                          </div>
+                          <div className="bc-meta">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+                            <div><span>Time</span><b>{timePart}</b></div>
+                          </div>
+                        </div>
+                        <div className="booking-card-row">
+                          <div className="bc-meta">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+                            <div><span>{locLabel}</span><b>{locAddress}</b></div>
+                          </div>
+                          <div className="bc-total">
+                            <span>Total</span>
+                            <b>{b.total}</b>
+                          </div>
+                        </div>
+                        <div className="booking-card-actions">
+                          <button className="btn btn-outline-dark">Message</button>
+                          {(b.status === 'confirmed' || b.status === 'ongoing') ? (
+                            <button className="btn btn-red" onClick={() => setTab('track')}>Track Live</button>
+                          ) : (
+                            <button className="btn btn-red">View Details</button>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <span className={`bli-status ${b.status}`}>{b.status}</span>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--red)', marginTop: 8, fontSize: 14 }}>{b.total}</div>
-                        {(b.status === 'confirmed' || b.status === 'ongoing') && (
-                          <button className="btn btn-outline-dark" style={{ padding: '7px 14px', marginTop: 8, fontSize: 11 }} onClick={() => setTab('track')}>Track Live</button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </>
               )}
             </div>
@@ -570,7 +662,7 @@ export default function Dashboard() {
 
         {tab === 'favorites' && (
           <div className="dash-panel">
-            <div className="dash-panel-head"><h3>Your Favorite Therapists</h3></div>
+            <div className="dash-panel-head"><h3>Your Favorite Masseuses</h3></div>
             {THERAPISTS.map((t) => (
               <div className="booking-list-item" key={t.name}>
                 <div className="bli-avatar"><img src={t.img} alt={t.name} /></div>
@@ -587,7 +679,7 @@ export default function Dashboard() {
         {tab === 'settings' && (
           <div className="dash-panel">
             <div className="profile-card">
-              <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop" alt="Amara Okafor" />
+              <img src={ada} alt="Amara Okafor" />
               <div className="profile-card-body">
                 <h4>Amara Okafor</h4>
                 <p>+234 801 234 5678 · amara.okafor@gmail.com</p>
