@@ -1,17 +1,26 @@
 import PageBanner from '../components/PageBanner';
 import Reveal from '../components/Reveal';
 import HomeCta from '../components/HomeCta';
+import gallery1 from '../images/gallery1.jpg';
+import gallery6 from '../images/gallery6.jpg';
+import gallery3 from '../images/gallery3.jpg';
+import gallery9 from '../images/gallery9.jpg';
+import gallery12 from '../images/gallery12.jpg';
+import gallery10 from '../images/gallery10.jpg';
+import gallery7 from '../images/gallery7.jpg';
+import gallery4 from '../images/gallery4.jpg';
+import gallery13 from '../images/gallery13.png';
 
 const IMAGES = [
-  { src: 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=500&h=650&fit=crop', cls: 'tall' },
-  { src: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=700&h=400&fit=crop', cls: 'wide' },
-  { src: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=500&h=400&fit=crop', cls: '' },
-  { src: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=500&h=650&fit=crop', cls: 'tall' },
-  { src: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500&h=400&fit=crop', cls: '' },
-  { src: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=700&h=400&fit=crop', cls: 'wide' },
-  { src: 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=500&h=400&fit=crop', cls: '' },
-  { src: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=500&h=650&fit=crop', cls: 'tall' },
-  { src: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=500&h=400&fit=crop', cls: '' },
+  { src: gallery1, cls: 'tall' },
+  { src: gallery6, cls: 'wide' },
+  { src: gallery3, cls: '' },
+  { src: gallery9, cls: 'tall' },
+  { src: gallery12, cls: '' },
+  { src: gallery10, cls: 'wide' },
+  { src: gallery7, cls: '' },
+  { src: gallery4, cls: 'tall' },
+  { src: gallery13, cls: '' },
 ];
 
 export default function GalleryPage() {
