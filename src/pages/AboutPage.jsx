@@ -2,6 +2,10 @@ import PageBanner from '../components/PageBanner';
 import AboutBlock from '../components/About';
 import Reveal from '../components/Reveal';
 import HomeCta from '../components/HomeCta';
+import chidi from '../images/Chidi.jpeg';
+import ada from '../images/Ada.jpg';
+import chi from '../images/Chi.jpeg';
+import amaka from '../images/Amaka.jpg';
 
 const VALUES = [
   { icon: 'M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z', title: 'Verified & Vetted', desc: 'Every therapist passes a background check, certification review and in-person skills test.' },
@@ -10,10 +14,10 @@ const VALUES = [
 ];
 
 const TEAM = [
-  { name: 'Diana', role: 'Lead Therapist · Swedish', img: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=520&fit=crop' },
-  { name: 'Chidi', role: 'Sports & Hot Stone', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=520&fit=crop' },
-  { name: 'Ada', role: 'Aromatherapy & Prenatal', img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=520&fit=crop' },
-  { name: 'Femi', role: 'Deep Tissue Specialist', img: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?w=400&h=520&fit=crop' },
+  { name: 'Diana', role: 'Lead Therapist · Swedish', img: chidi },
+  { name: 'Chidi', role: 'Sports & Hot Stone', img: ada },
+  { name: 'Ada', role: 'Aromatherapy & Prenatal', img: chi },
+  { name: 'Femi', role: 'Deep Tissue Specialist', img: amaka },
 ];
 
 export default function AboutPage() {

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import Reveal from './Reveal';
+import girl from '../images/girl.jpg';
+import tissue from '../images/Tissue.png';
 
 const POINTS = [
   'Verified, background-checked therapists',
@@ -15,10 +17,10 @@ export default function About() {
         <div className="about-split">
           <Reveal className="about-photos" style={{ position: 'relative' }}>
             <div className="about-photo-main">
-              <img src="https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=700&h=850&fit=crop" alt="Massage therapy in progress" />
+              <img src={tissue} alt="Massage therapy in progress" />
             </div>
             <div className="about-photo-small">
-              <img src="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=500&h=500&fit=crop" alt="Spa essentials" />
+              <img src={girl} alt="Spa essentials" />
             </div>
             <div className="about-badge">
               <b>6+</b>

@@ -1,12 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import logoMark from '../images/logo-mark.png';
+import LoginImg from '../images/Logi.png';
 
 export default function Login() {
   const navigate = useNavigate();
   return (
     <div className="auth-page">
       <div className="auth-visual">
-        <img className="auth-photo" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1000&h=1300&fit=crop" alt="" />
+        <img className="auth-photo" src={LoginImg} alt="" />
         <div className="auth-visual-content">
           <Link to="/" className="logo">
             <img src={logoMark} className="logo-mark" alt="MassageNowNow" />

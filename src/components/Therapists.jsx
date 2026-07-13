@@ -1,10 +1,15 @@
 import Reveal from './Reveal';
+import chidi from '../images/Chidi.jpeg';
+import ada from '../images/Ada.jpg';
+import chi from '../images/Chi.jpeg';
+import amaka from '../images/Amaka.jpg';
+
 
 const THERAPISTS = [
-  { name: 'Diana', tags: 'Swedish · Deep Tissue · 6+ yrs', rating: '4.9', img: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=520&fit=crop' },
-  { name: 'Chidi', tags: 'Sports · Hot Stone · 5 yrs', rating: '4.8', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=520&fit=crop' },
-  { name: 'Ada', tags: 'Aromatherapy · Prenatal · 8 yrs', rating: '5.0', img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=520&fit=crop' },
-  { name: 'Femi', tags: 'Deep Tissue · Sports · 7 yrs', rating: '4.9', img: 'https://images.unsplash.com/photo-1622902046580-2b47f47f5471?w=400&h=520&fit=crop' },
+  { name: 'Chidi', tags: 'Swedish · Deep Tissue · 6+ yrs', rating: '4.9', img: chidi },
+  { name: 'Ada', tags: 'Sports · Hot Stone · 5 yrs', rating: '4.8', img: ada },
+  { name: 'Chi', tags: 'Aromatherapy · Prenatal · 8 yrs', rating: '5.0', img: chi },
+  { name: 'Amaka', tags: 'Deep Tissue · Sports · 7 yrs', rating: '4.9', img: amaka },
 ];
 
 export default function Therapists() {
