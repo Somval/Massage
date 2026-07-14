@@ -9,9 +9,11 @@ import gallery12 from '../images/gallery12.jpg';
 import gallery10 from '../images/gallery10.jpg';
 import gallery7 from '../images/gallery7.jpg';
 import gallery4 from '../images/gallery4.jpg';
-import gallery13 from '../images/gallery13.png';
+import gallery13 from '../images/gallery13.jpg';
 import gallery11 from '../images/gallery11.jpg';
 import gallery5 from '../images/gallery5.jpg';
+import cotact from '../images/cotact.jpg';
+
 
 
 const IMAGES = [
@@ -31,7 +33,7 @@ const IMAGES = [
 export default function GalleryPage() {
   return (
     <>
-      <PageBanner title="Gallery" crumb="Gallery" img="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=1600&h=700&fit=crop" />
+      <PageBanner title="Gallery" crumb="Gallery" img={cotact} />
       <section className="gallery" style={{ background: 'var(--ink)' }}>
         <div className="wrap">
           <Reveal className="services-head">

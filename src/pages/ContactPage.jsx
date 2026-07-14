@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import PageBanner from '../components/PageBanner';
 import Reveal from '../components/Reveal';
+import contact from '../images/contact.png';
 
 export default function ContactPage() {
   return (
     <>
-      <PageBanner title="Contact & Booking" crumb="Contact" img="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1600&h=700&fit=crop" />
+      <PageBanner title="Contact" crumb="Contact"  img={contact}/>
 
       <section>
         <div className="wrap">

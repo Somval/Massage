@@ -3,6 +3,7 @@ import Reveal from './Reveal';
 import girl from '../images/girl.jpg';
 import tissue from '../images/Tissue.png';
 
+
 const POINTS = [
   'Verified, background-checked therapists',
   'Available 24 hours, 7 days a week',

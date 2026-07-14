@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import PageBanner from '../components/PageBanner';
 import Reveal from '../components/Reveal';
 import HomeCta from '../components/HomeCta';
+import gallery14 from '../images/gallery14.png';
 
 const CATEGORIES = [
   {
@@ -28,7 +29,7 @@ const CATEGORIES = [
 export default function ServicesPage() {
   return (
     <>
-      <PageBanner title="Our Services" crumb="Services" img="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1600&h=700&fit=crop" />
+      <PageBanner title="Our Services" crumb="Services" img={gallery14} />
 
       <section>
         <div className="wrap">

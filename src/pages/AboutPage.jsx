@@ -6,6 +6,7 @@ import chidi from '../images/Chidi.jpeg';
 import ada from '../images/Ada.jpg';
 import chi from '../images/Chi.jpeg';
 import amaka from '../images/Amaka.jpg';
+import Logi from '../images/Logi.png';
 
 const VALUES = [
   { icon: 'M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z', title: 'Verified & Vetted', desc: 'Every therapist passes a background check, certification review and in-person skills test.' },
@@ -23,7 +24,7 @@ const TEAM = [
 export default function AboutPage() {
   return (
     <>
-      <PageBanner title="About Us" crumb="About" img="https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=1600&h=700&fit=crop" />
+      <PageBanner title="About Us" crumb="About" img={Logi} />
       <AboutBlock />
 
       <section style={{ paddingTop: 0, background: 'var(--cream-deep)' }}>
