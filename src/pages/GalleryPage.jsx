@@ -10,6 +10,9 @@ import gallery10 from '../images/gallery10.jpg';
 import gallery7 from '../images/gallery7.jpg';
 import gallery4 from '../images/gallery4.jpg';
 import gallery13 from '../images/gallery13.png';
+import gallery11 from '../images/gallery11.jpg';
+import gallery5 from '../images/gallery5.jpg';
+
 
 const IMAGES = [
   { src: gallery1, cls: 'tall' },
@@ -21,6 +24,8 @@ const IMAGES = [
   { src: gallery7, cls: '' },
   { src: gallery4, cls: 'tall' },
   { src: gallery13, cls: '' },
+  { src: gallery11, cls: '' },
+  { src: gallery5, cls: '' },
 ];
 
 export default function GalleryPage() {

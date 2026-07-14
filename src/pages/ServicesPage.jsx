@@ -7,12 +7,12 @@ const CATEGORIES = [
   {
     name: 'Massage Therapy',
     items: [
-      { name: 'Swedish Massage', desc: '60 min · Full body relaxation', price: '₦18,000' },
-      { name: 'Deep Tissue', desc: '60 min · Targeted muscle relief', price: '₦22,000' },
-      { name: 'Hot Stone Therapy', desc: '75 min · Heated stone treatment', price: '₦26,000' },
-      { name: 'Aromatherapy', desc: '60 min · Essential oil blend', price: '₦20,000' },
-      { name: 'Sports Recovery', desc: '45 min · Pre/post training', price: '₦24,000' },
-      { name: 'Prenatal Massage', desc: '60 min · Safe for expecting mothers', price: '₦22,000' },
+      { name: 'Swedish Massage', desc: '60 min · Full body relaxation', price: '₦50,000' },
+      { name: 'Deep Tissue', desc: '60 min · Targeted muscle relief', price: '₦55,000' },
+      { name: 'Hot Stone Therapy', desc: '75 min · Heated stone treatment', price: '₦58,000' },
+      { name: 'Aromatherapy', desc: '60 min · Essential oil blend', price: '₦60,000' },
+      { name: 'Sports Recovery', desc: '45 min · Pre/post training', price: '₦65,000' },
+      { name: 'Prenatal Massage', desc: '60 min · Safe for expecting mothers', price: '₦62,000' },
     ],
   },
   {

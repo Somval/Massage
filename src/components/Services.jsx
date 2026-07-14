@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Reveal from './Reveal';
+import paret from '../images/paret.jpeg';
 
 const SERVICES = [
   { num: '01', name: 'Swedish Massage', desc: 'Long, flowing strokes that ease tension and improve circulation.', price: 'From ₦18,000', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&h=800&fit=crop' },
@@ -7,7 +8,7 @@ const SERVICES = [
   { num: '03', name: 'Hot Stone Therapy', desc: 'Heated basalt stones melt away deep muscle tension.', price: 'From ₦26,000', img: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=600&h=800&fit=crop' },
   { num: '04', name: 'Aromatherapy', desc: 'Essential-oil blends paired with gentle strokes to calm the mind.', price: 'From ₦20,000', img: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600&h=800&fit=crop' },
   { num: '05', name: 'Sports Recovery', desc: 'Pre- or post-training work focused on mobility and injury prevention.', price: 'From ₦24,000', img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=800&fit=crop' },
-  { num: '06', name: 'Prenatal Massage', desc: 'Specially trained therapists using safe positioning for expecting mothers.', price: 'From ₦22,000', img: 'https://images.unsplash.com/photo-1591343395902-1707c9c05ec1?w=600&h=800&fit=crop' },
+  { num: '06', name: 'Prenatal Massage', desc: 'Specially trained therapists using safe positioning for expecting mothers.', price: 'From ₦22,000', img: paret },
 ];
 
 export default function Services() {
