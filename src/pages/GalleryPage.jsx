@@ -17,17 +17,8 @@ import cotact from '../images/cotact.jpg';
 
 
 const IMAGES = [
-  { src: gallery1, cls: 'tall' },
-  { src: gallery6, cls: 'wide' },
-  { src: gallery3, cls: '' },
-  { src: gallery9, cls: 'tall' },
-  { src: gallery12, cls: '' },
-  { src: gallery10, cls: 'wide' },
-  { src: gallery7, cls: '' },
-  { src: gallery4, cls: 'tall' },
-  { src: gallery13, cls: '' },
-  { src: gallery11, cls: '' },
-  { src: gallery5, cls: '' },
+  gallery1, gallery6, gallery3, gallery9, gallery12, gallery10,
+  gallery7, gallery4, gallery13, gallery11, gallery5,
 ];
 
 export default function GalleryPage() {
@@ -42,9 +33,9 @@ export default function GalleryPage() {
             <p>A glimpse into the calm, considered spaces our therapists bring to you.</p>
           </Reveal>
           <div className="gallery-grid">
-            {IMAGES.map((img, i) => (
-              <Reveal key={i} className={`gallery-item ${img.cls}`} style={{ display: 'block' }}>
-                <img src={img.src} alt="MassageNowNow studio" />
+            {IMAGES.map((src, i) => (
+              <Reveal key={i} className="gallery-item">
+                <img src={src} alt="MassageNowNow studio" loading="lazy" />
               </Reveal>
             ))}
           </div>

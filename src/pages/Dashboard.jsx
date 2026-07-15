@@ -8,13 +8,13 @@ import ugo from '../images/ugo.jpg';
 import amaka from '../images/Amaka.jpg';
 
 const NAV = [
-  { key: 'overview', label: 'Overview', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-  { key: 'bookings', label: 'My Bookings', icon: 'M3 5h18M3 5a2 2 0 002 2h14a2 2 0 002-2M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5M8 3v4M16 3v4' },
-  { key: 'track', label: 'Track', icon: 'M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z M12 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z' },
-  { key: 'messages', label: 'Messages', icon: 'M21 11.5a8.4 8.4 0 01-9 8.4A8.9 8.9 0 013 12a8.4 8.4 0 019-8.5 8.6 8.6 0 019 8z' },
-  { key: 'wallet', label: 'Wallet', icon: 'M3 6h18v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6zM16 13h3M3 9h18' },
-  { key: 'favorites', label: 'Favorites', icon: 'M20 12c0 4-3.6 7-8 9-4.4-2-8-5-8-9a4 4 0 018-1.5A4 4 0 0120 12z' },
-  { key: 'settings', label: 'Profile', icon: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.9 2.9l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.6V21a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.9-2.9l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.6-1H3a2 2 0 010-4h.1a1.7 1.7 0 001.6-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.9-2.9l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.6V3a2 2 0 014 0v.1a1.7 1.7 0 001 1.6 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.9 2.9l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.6 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.6 1z' },
+  { key: 'overview',  label: 'Overview',    icon: 'M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z' },
+  { key: 'bookings',  label: 'My Bookings', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
+  { key: 'track',     label: 'Track',       icon: 'M12 21c4-4.5 6-7.6 6-10.5A6 6 0 0 0 6 10.5C6 13.4 8 16.5 12 21zM12 12.5a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4z' },
+  { key: 'messages',  label: 'Messages',    icon: 'M4 5h16v11H8l-4 4z' },
+  { key: 'wallet',    label: 'Wallet',      icon: 'M4 7h16v12H4zM4 7V5h13M16 13h3' },
+  { key: 'favorites', label: 'Favorites',   icon: 'M12 20C7.5 17.5 4 14.5 4 10.9A3.9 3.9 0 0 1 12 8.8a3.9 3.9 0 0 1 8 2.1c0 3.6-3.5 6.6-8 9.1z' },
+  { key: 'settings',  label: 'Profile',     icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
 ];
 
 const THERAPISTS = [
@@ -258,6 +258,129 @@ const NOTIFICATIONS = [
   { title: 'Wallet top up successful', body: '₦50,000 was added to your wallet.', time: '1d ago' },
 ];
 
+
+const TOPUP_PRESETS = [5000, 10000, 20000, 50000];
+const REWARDS = [
+  { title: 'Free 30-min Add-On', cost: '2,000 pts', desc: 'Extend any session by half an hour.', icon: 'M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z' },
+  { title: '₦5,000 Wallet Credit', cost: '4,500 pts', desc: 'Straight into your wallet balance.', icon: 'M4 7h16v12H4zM4 7V5h13M16 13h3' },
+  { title: 'Premium Aromatherapy', cost: '6,000 pts', desc: 'Upgrade to our signature oil blend.', icon: 'M12 3c3 4 5 6.4 5 9a5 5 0 0 1-10 0c0-2.6 2-5 5-9z' },
+];
+
+function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, onDone }) {
+  if (mode === 'rewards') {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <h3>Rewards</h3>
+          <p>You have <b style={{ color: 'var(--red)' }}>3,250 points</b>. Earn 100 points for every ₦1,000 spent.</p>
+          <div className="rewards-progress">
+            <div className="rewards-progress-bar"><span style={{ width: '72%' }} /></div>
+            <small>1,250 points to your next free session</small>
+          </div>
+          <div className="rewards-list">
+            {REWARDS.map((r) => (
+              <div className="reward-row" key={r.title}>
+                <div className="reward-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={r.icon} /></svg>
+                </div>
+                <div className="reward-body">
+                  <h5>{r.title}</h5>
+                  <span>{r.desc}</span>
+                </div>
+                <div className="reward-cta">
+                  <b>{r.cost}</b>
+                  <button type="button" onClick={onDone}>Redeem</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'send') {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <h3>Send Money</h3>
+          <p>Transfer from your wallet balance of ₦45,600.00.</p>
+          <div className="modal-field">
+            <label>Send To</label>
+            <select value={sendForm.to} onChange={(e) => setSendForm({ ...sendForm, to: e.target.value })}>
+              {THERAPISTS.map((t) => <option key={t.name}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="modal-field">
+            <label>Amount</label>
+            <div className="amount-input">
+              <span>₦</span>
+              <input type="number" placeholder="0.00" value={sendForm.amount}
+                onChange={(e) => setSendForm({ ...sendForm, amount: e.target.value })} />
+            </div>
+          </div>
+          <div className="modal-field">
+            <label>Note (optional)</label>
+            <input type="text" placeholder="What's this for?" value={sendForm.note}
+              onChange={(e) => setSendForm({ ...sendForm, note: e.target.value })} />
+          </div>
+          <button className="btn btn-red btn-block" onClick={onDone}>Send ₦{sendForm.amount || '0'}</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <h3>Top Up Wallet</h3>
+        <p>Add funds instantly. You get a 5% bonus on every top up.</p>
+        <div className="modal-field">
+          <label>Amount</label>
+          <div className="amount-input">
+            <span>₦</span>
+            <input type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+        </div>
+        <div className="topup-presets">
+          {TOPUP_PRESETS.map((v) => (
+            <button type="button" key={v}
+              className={String(v) === String(amount) ? 'active' : ''}
+              onClick={() => setAmount(String(v))}>
+              ₦{v.toLocaleString()}
+            </button>
+          ))}
+        </div>
+        <div className="modal-field">
+          <label>Pay With</label>
+          <select>
+            <option>Card — •••• 4821</option>
+            <option>Bank Transfer</option>
+            <option>USSD</option>
+          </select>
+        </div>
+        {amount > 0 && (
+          <div className="topup-summary">
+            <div><span>Amount</span><b>₦{Number(amount).toLocaleString()}</b></div>
+            <div><span>Bonus (5%)</span><b style={{ color: 'var(--red)' }}>+₦{Math.round(amount * 0.05).toLocaleString()}</b></div>
+            <div className="topup-summary-total"><span>New Balance</span><b>₦{(45600 + Number(amount) * 1.05).toLocaleString()}</b></div>
+          </div>
+        )}
+        <button className="btn btn-red btn-block" onClick={onDone}>Top Up ₦{amount || '0'}</button>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tab, setTab] = useState('overview');
@@ -266,6 +389,9 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
+  const [walletModal, setWalletModal] = useState(null); // 'topup' | 'send' | 'rewards'
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [sendForm, setSendForm] = useState({ to: THERAPISTS[0].name, amount: '', note: '' });
   const [showNotifications, setShowNotifications] = useState(false);
 
   const upcoming = bookings.filter((b) => b.status === 'confirmed' || b.status === 'pending');
@@ -303,7 +429,7 @@ export default function Dashboard() {
       {sidebarOpen && <div className="dash-backdrop" onClick={() => setSidebarOpen(false)} />}
       <aside className={`dash-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="dash-sidebar-top">
-          <Link to="/" className="logo">
+          <Link to="/" className="logo" onClick={() => setSidebarOpen(false)}>
             <img src={logoMark} className="logo-mark" alt="MassageNowNow" />
             <span className="logo-word">Massage<small>Now Now</small></span>
           </Link>
@@ -314,19 +440,25 @@ export default function Dashboard() {
         <nav className="dash-nav">
           {NAV.map((n) => (
             <a key={n.key} href="#" className={tab === n.key ? 'active' : ''} onClick={(e) => { e.preventDefault(); setTab(n.key); setSidebarOpen(false); }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d={n.icon} /></svg>
+              <span className="dash-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={n.icon} /></svg>
+              </span>
               {n.label}
             </a>
           ))}
         </nav>
         <div className="dash-sidebar-foot">
-          <div className="dash-user">
+          <button
+            type="button"
+            className="dash-user"
+            onClick={() => { setTab('settings'); setSidebarOpen(false); }}
+          >
             <div className="dash-user-avatar"><img src={ada} alt="Amara Okafor" /></div>
             <div>
               <h5>Amara Okafor</h5>
               <span>amara@gmail.com</span>
             </div>
-          </div>
+          </button>
           <Link to="/" style={{ display: 'block', marginTop: 16, fontSize: 12.5, color: 'var(--text-mute)', fontWeight: 600 }}>
             ← Sign out to site
           </Link>
@@ -394,7 +526,7 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <div className="dash-panel-head" style={{ marginBottom: 14 }}>
+            <div className="dash-overview-head">
               <h3>Featured Masseuses</h3>
               <a href="#" onClick={(e) => { e.preventDefault(); setTab('favorites'); }}>See All</a>
             </div>
@@ -592,9 +724,9 @@ export default function Dashboard() {
                     {hideBalance ? 'Show Balance' : 'Hide Balance'}
                   </button>
                 </div>
-                <div className="wallet-topup-btn">
+                <button type="button" className="wallet-topup-btn" onClick={() => setWalletModal('topup')}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-                </div>
+                </button>
               </div>
               <div className="wallet-mini-stats">
                 <div><span>Total Added</span><b>₦120,000.00</b></div>
@@ -603,22 +735,22 @@ export default function Dashboard() {
             </div>
 
             <div className="wallet-actions-grid">
-              <div className="wallet-action-sq">
-                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg></div>
+              <button type="button" className="wallet-action-sq" onClick={() => setWalletModal('topup')}>
+                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></div>
                 <span>Top Up</span>
-              </div>
-              <div className="wallet-action-sq">
-                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg></div>
+              </button>
+              <button type="button" className="wallet-action-sq" onClick={() => setWalletModal('send')}>
+                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.8 18-3.7-7.5L3 9.8z" /></svg></div>
                 <span>Send</span>
-              </div>
-              <div className="wallet-action-sq" onClick={() => document.getElementById('txn-panel')?.scrollIntoView({ behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
-                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h4l3 8 4-16 3 8h4" /></svg></div>
+              </button>
+              <button type="button" className="wallet-action-sq" onClick={() => document.getElementById('txn-panel')?.scrollIntoView({ behavior: 'smooth' })}>
+                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4" /></svg></div>
                 <span>Transactions</span>
-              </div>
-              <div className="wallet-action-sq">
-                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l2.5 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.5-.5z" /></svg></div>
+              </button>
+              <button type="button" className="wallet-action-sq" onClick={() => setWalletModal('rewards')}>
+                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z" /></svg></div>
                 <span>Rewards</span>
-              </div>
+              </button>
             </div>
 
             <div className="benefits-banner">
@@ -746,6 +878,17 @@ export default function Dashboard() {
       </main>
 
       {showModal && <BookingModal onClose={() => setShowModal(false)} onCreate={createBooking} />}
+      {walletModal && (
+        <WalletModal
+          mode={walletModal}
+          amount={topUpAmount}
+          setAmount={setTopUpAmount}
+          sendForm={sendForm}
+          setSendForm={setSendForm}
+          onClose={() => setWalletModal(null)}
+          onDone={() => { setWalletModal(null); setToast(true); setTimeout(() => setToast(false), 2600); }}
+        />
+      )}
       {toast && (
         <div className="booking-toast">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M5 12l5 5 9-10" /></svg>
