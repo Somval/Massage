@@ -1,9 +1,29 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logoMark from '../images/logo-mark.png';
 import LoginImg from '../images/Logi.png';
 
+// Placeholder ops login, checked client-side against whatever is typed
+// into the form below. Swap this for a real server-side role check
+// before launch — anything shipped to the browser can be read by anyone
+// who opens devtools.
+const ADMIN_EMAIL = 'admin@massagenownow.com';
+const ADMIN_PASSWORD = 'change-me-before-launch';
+
 export default function Login() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (email.trim() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      navigate('/admin');
+      return;
+    }
+    navigate('/dashboard');
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-visual">
@@ -25,14 +45,14 @@ export default function Login() {
           </Link>
           <h2>Log In</h2>
           <p>Enter your details to access your dashboard.</p>
-          <form onSubmit={(e) => { e.preventDefault(); navigate('/dashboard'); }}>
+          <form onSubmit={submit}>
             <div className="auth-field">
               <label>Email Address</label>
-              <input type="email" placeholder="Enter your email address" required />
+              <input type="email" placeholder="Enter your email address" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="auth-field">
               <label>Password</label>
-              <input type="password" placeholder="Enter your password" required />
+              <input type="password" placeholder="Enter your password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <div className="auth-row-between">
               <label className="auth-check">

@@ -1,0 +1,171 @@
+/* ============================================================
+   Admin Dashboard — extends the shared .dash-shell system in
+   styles.css (same sidebar, topbar, stat card, panel and modal
+   classes used by the customer Dashboard) with admin-only pieces:
+   live coverage strip, promo cards, review/dispute pills, a
+   support thread, and simple bar-chart reports.
+   ============================================================ */
+
+/* ---- Sidebar: admin gets a dark sidebar so it reads as a
+   distinct, ops-facing surface next to the customer dashboard's
+   light one, while reusing the same layout classes. ---- */
+.adm-shell .dash-sidebar{background:var(--app-black);color:#fff;border-right:1px solid var(--app-line);}
+.adm-shell .dash-sidebar-top .logo small{color:#fff;}
+.adm-shell .dash-sidebar-close{background:var(--app-panel);color:#fff;}
+.adm-shell .dash-nav a{color:rgba(255,255,255,.6);}
+.adm-shell .dash-nav a:hover{background:var(--app-panel);color:#fff;}
+.adm-shell .dash-nav a.active{background:var(--red);color:#fff;}
+.adm-shell .dash-sidebar-foot{border-top:1px solid var(--app-line);}
+.adm-shell .dash-user:hover{background:var(--app-panel);}
+.adm-shell .dash-user h5{color:#fff;}
+.adm-shell .dash-user span{color:rgba(255,255,255,.45);}
+.adm-shell .dash-user-avatar{border-color:var(--gold);}
+.adm-badge-role{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--gold);background:rgba(201,162,39,.14);padding:3px 9px;border-radius:100px;margin-top:2px;}
+
+/* ---- Search box in the topbar ---- */
+.adm-search{display:flex;align-items:center;gap:9px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:0 14px;height:42px;min-width:230px;color:var(--text-mute);}
+.adm-search input{flex:1;border:0;background:transparent;outline:none;font-family:inherit;font-size:13px;color:var(--ink);}
+@media(max-width:1000px){.adm-search{display:none;}}
+
+/* ---- Metric cards: reuse .dash-stat-card, add a trend badge ---- */
+.adm-stat-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.adm-stat-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;white-space:nowrap;}
+.adm-stat-badge.up{background:#E4F5EA;color:var(--app-green);}
+.adm-stat-badge.flat{background:var(--app-bg-deep);color:var(--red);}
+
+/* ---- Live coverage strip (signature element): dark card, one
+   chip per Lagos area, dot shows available vs busy right now ---- */
+.adm-coverage{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--app-black-soft) 0%,var(--app-black) 75%);border-radius:20px;padding:24px 26px;margin-bottom:26px;color:#fff;}
+.adm-coverage::before{content:'';position:absolute;top:-70px;right:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,39,.22),transparent 70%);}
+.adm-coverage-head{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.adm-coverage-head h3{font-size:16px;font-weight:700;color:#fff;}
+.adm-coverage-head span{font-size:12px;color:rgba(255,255,255,.55);}
+.adm-coverage-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px;}
+.adm-area-chip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;}
+.adm-area-chip-top{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.adm-area-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.adm-area-dot.available{background:var(--app-green);}
+.adm-area-dot.busy{background:var(--red-glow);}
+.adm-area-chip-top b{font-size:12.5px;font-weight:700;color:#fff;}
+.adm-area-chip span{font-size:11px;color:rgba(255,255,255,.55);}
+.adm-coverage-legend{position:relative;z-index:1;display:flex;gap:20px;font-size:11.5px;color:rgba(255,255,255,.55);}
+.adm-coverage-legend span{display:flex;align-items:center;gap:6px;}
+
+/* ---- Bookings table (desktop) / cards (mobile) ---- */
+.adm-table{width:100%;border-collapse:collapse;}
+.adm-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mute);font-weight:700;padding:0 12px 10px;border-bottom:1px solid var(--line);}
+.adm-table td{padding:14px 12px;font-size:13px;color:var(--text);border-bottom:1px solid var(--line);vertical-align:middle;}
+.adm-table tr:last-child td{border-bottom:none;}
+.adm-table tr{cursor:pointer;}
+.adm-table tr:hover td{background:var(--app-bg-deep);}
+.adm-cell-person b{display:block;font-size:13px;font-weight:700;color:var(--ink);}
+.adm-cell-person span{font-size:11.5px;color:var(--text-mute);}
+.adm-status-pill{font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:100px;white-space:nowrap;display:inline-block;}
+.adm-status-pill.upcoming{background:#FCF1DC;color:#9C7A1D;}
+.adm-status-pill.ongoing{background:#FDEBEB;color:var(--red);}
+.adm-status-pill.completed{background:var(--app-bg-deep);color:var(--text-soft);}
+.adm-status-pill.cancelled{background:#F1E4E4;color:var(--text-mute);}
+.adm-status-pill.available{background:#E4F5EA;color:var(--app-green);}
+.adm-status-pill.busy{background:#FDEBEB;color:var(--red);}
+.adm-status-pill.open{background:#FDEBEB;color:var(--red);}
+.adm-status-pill.investigating{background:#FCF1DC;color:#9C7A1D;}
+.adm-status-pill.resolved,.adm-status-pill.solved{background:#E4F5EA;color:var(--app-green);}
+.adm-status-pill.pending{background:#FCF1DC;color:#9C7A1D;}
+.adm-status-pill.flagged{background:#FDEBEB;color:var(--red);}
+
+/* Mobile bookings/roster cards (shown instead of table under 760px) */
+.adm-card-list{display:none;flex-direction:column;gap:12px;}
+.adm-row-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;}
+.adm-row-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.adm-row-card-top b{font-size:13.5px;font-weight:700;color:var(--ink);}
+.adm-row-card p{font-size:12px;color:var(--text-mute);margin:2px 0;}
+.adm-row-card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+@media(max-width:760px){
+  .adm-table-wrap{display:none;}
+  .adm-card-list{display:flex;}
+}
+
+/* ---- Search + filter row for bookings ---- */
+.adm-toolbar{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.adm-toolbar .adm-search{min-width:260px;flex:1;display:flex;}
+@media(max-width:1000px){.adm-toolbar .adm-search{display:flex;}}
+
+/* ---- Reassign therapist chips (inside modal) ---- */
+.adm-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 20px;}
+.adm-chip{padding:8px 14px;border-radius:100px;font-size:12.5px;font-weight:600;background:var(--app-bg-deep);color:var(--red);cursor:pointer;border:1.5px solid transparent;}
+.adm-chip.selected{background:var(--red);color:#fff;}
+.adm-modal-actions{display:flex;gap:12px;margin-top:8px;}
+.adm-modal-actions .btn{flex:1;width:auto;padding:13px;font-size:12.5px;}
+.btn-outline-red{border:1.5px solid rgba(179,42,36,.4);color:var(--red);}
+.btn-outline-red:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.btn-outline-red:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ---- Promotions ---- */
+.adm-promo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.adm-promo-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:18px;}
+.adm-promo-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.adm-promo-code{background:var(--app-bg-deep);color:var(--red);font-weight:800;font-size:13px;letter-spacing:.4px;padding:6px 10px;border-radius:8px;}
+.adm-promo-top span{font-size:13px;font-weight:700;color:var(--ink);flex:1;}
+.adm-promo-desc{font-size:12px;color:var(--text-mute);margin-bottom:14px;}
+.adm-progress{height:6px;border-radius:100px;background:var(--app-bg-deep);overflow:hidden;margin-bottom:8px;}
+.adm-progress span{display:block;height:100%;background:var(--gold);border-radius:100px;}
+.adm-promo-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--text-mute);}
+/* Simple styled checkbox used as an on/off switch */
+.adm-switch{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0;}
+.adm-switch input{opacity:0;width:0;height:0;}
+.adm-switch-track{position:absolute;inset:0;background:var(--line);border-radius:100px;transition:background .2s ease;cursor:pointer;}
+.adm-switch-track::before{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.adm-switch input:checked + .adm-switch-track{background:var(--app-green);}
+.adm-switch input:checked + .adm-switch-track::before{transform:translateX(16px);}
+
+/* ---- Reviews & disputes ---- */
+.adm-review-card,.adm-dispute-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;}
+.adm-review-card.flagged{border-color:rgba(179,42,36,.35);}
+.adm-review-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
+.adm-review-top b{font-size:13px;font-weight:700;color:var(--ink);}
+.adm-review-rating{display:flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--ink);flex-shrink:0;}
+.adm-review-rating svg{color:var(--gold);}
+.adm-review-card p,.adm-dispute-card p{font-size:12.5px;color:var(--text-soft);line-height:1.6;margin-bottom:10px;}
+.adm-review-foot,.adm-dispute-foot{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--text-mute);}
+.adm-resolve-link{background:none;border:0;color:var(--red);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;}
+
+/* ---- Support inbox ---- */
+.adm-ticket-item{display:flex;gap:14px;padding:14px 4px;border-top:1px solid var(--line);cursor:pointer;}
+.adm-ticket-item:first-child{border-top:none;}
+.adm-ticket-item:hover{background:var(--app-bg-deep);border-radius:12px;}
+.adm-ticket-avatar{width:42px;height:42px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+.adm-ticket-body{flex:1;min-width:0;}
+.adm-ticket-top{display:flex;justify-content:space-between;gap:8px;}
+.adm-ticket-top b{font-size:13.5px;font-weight:700;color:var(--ink);}
+.adm-ticket-top span{font-size:10.5px;color:var(--text-mute);flex-shrink:0;}
+.adm-ticket-body p{font-size:12px;color:var(--text-mute);margin:3px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.adm-ticket-foot{display:flex;justify-content:space-between;align-items:center;}
+.adm-ticket-foot span{font-size:11px;color:var(--text-mute);}
+
+.adm-thread{display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto;padding:4px 2px 12px;margin-bottom:14px;}
+.adm-bubble{max-width:78%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;}
+.adm-bubble.customer{align-self:flex-start;background:var(--app-bg-deep);color:var(--ink);}
+.adm-bubble.admin{align-self:flex-end;background:var(--red);color:#fff;}
+.adm-reply-row{display:flex;gap:10px;}
+.adm-reply-row input{flex:1;border:1.5px solid var(--line);border-radius:100px;padding:12px 16px;font-family:inherit;font-size:13px;outline:none;background:var(--cream);}
+.adm-reply-row input:focus{border-color:var(--gold);}
+.adm-reply-send{width:44px;height:44px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:0;cursor:pointer;}
+
+/* ---- Reports ---- */
+.adm-report-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:1000px){.adm-report-grid{grid-template-columns:1fr;}}
+.adm-bar-chart{display:flex;align-items:flex-end;justify-content:space-between;height:150px;gap:6px;margin-top:8px;}
+.adm-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+.adm-bar-val{font-size:9.5px;color:var(--text-mute);margin-bottom:4px;}
+.adm-bar{width:100%;max-width:28px;border-radius:5px 5px 0 0;background:var(--red);}
+.adm-bar-label{font-size:10.5px;color:var(--text-mute);margin-top:6px;}
+.adm-hbar-row{margin-bottom:14px;}
+.adm-hbar-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;}
+.adm-hbar-top b{font-weight:700;color:var(--ink);}
+.adm-hbar-track{height:8px;border-radius:100px;background:var(--app-bg-deep);overflow:hidden;}
+.adm-hbar-fill{display:block;height:100%;border-radius:100px;background:var(--ink);}
+
+@media(max-width:600px){
+  .adm-coverage-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));}
+  .adm-promo-grid{grid-template-columns:1fr;}
+}

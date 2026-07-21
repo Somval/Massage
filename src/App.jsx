@@ -9,14 +9,15 @@ import ContactPage from './pages/ContactPage';
 import SignUp from './pages/SignUp';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 function Shell() {
   const location = useLocation();
-  const bare = ['/dashboard', '/login', '/signup'].includes(location.pathname);
+  const bare = ['/dashboard', '/login', '/signup', '/admin'].includes(location.pathname);
 
   return (
     <>
-      <Header />
+      {!bare && <Header />}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<AboutPage />} />
@@ -26,6 +27,7 @@ function Shell() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
       {!bare && <Footer />}
     </>
