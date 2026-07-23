@@ -9,7 +9,7 @@ import LoginImg from '../images/Logi.png';
 // who opens devtools.
 const ADMIN_EMAIL = 'admin@massagenownow.com';
 const ADMIN_PASSWORD = '12345';
-const MASSEUSE_EMAIL = 'therapist@massagenownow.com';
+const MASSEUSE_EMAIL = 'masseuse@massagenownow.com';
 const MASSEUSE_PASSWORD = '12345';
 
 export default function Login() {
