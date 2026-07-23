@@ -320,13 +320,13 @@ footer{background:var(--ink);color:rgba(255,255,255,.65);padding:80px 0 0;}
 .dash-sidebar-close{display:none;width:32px;height:32px;border-radius:50%;background:var(--app-bg-deep);color:var(--ink);align-items:center;justify-content:center;flex-shrink:0;}
 .dash-menu-toggle{display:none;width:40px;height:40px;border-radius:10px;background:var(--paper);box-shadow:0 4px 14px rgba(179,42,36,.08);color:var(--ink);align-items:center;justify-content:center;flex-shrink:0;}
 .dash-backdrop{display:none;}
-.dash-nav{display:flex;flex-direction:column;align-items:stretch;gap:4px;flex:1 1 auto;}
-.dash-nav a{display:flex;align-items:center;justify-content:flex-start;text-align:left;width:100%;box-sizing:border-box;gap:12px;padding:12px 16px;border-radius:100px;font-size:14px;font-weight:600;color:var(--text-soft);transition:all .2s ease;}
+.dash-nav{display:flex;flex-direction:column;align-items:stretch;gap:2px;flex:0 0 auto;}
+.dash-nav a{display:flex;align-items:center;justify-content:flex-start;text-align:left;width:100%;box-sizing:border-box;gap:12px;padding:10px 16px;border-radius:100px;font-size:14px;font-weight:600;color:var(--text-soft);transition:all .2s ease;}
 .dash-nav a:hover{background:var(--app-bg-deep);color:var(--ink);}
 .dash-nav a.active{background:var(--red);color:#fff;}
 .dash-nav svg{flex:0 0 18px;width:18px;height:18px;display:block;overflow:visible;}
 .dash-nav a .dash-nav-icon{flex:0 0 18px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;}
-.dash-sidebar-foot{margin-top:24px;border-top:1px solid var(--line);padding-top:20px;}
+.dash-sidebar-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:20px;}
 .dash-user{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:8px;margin:-8px;border-radius:12px;cursor:pointer;font-family:inherit;transition:background .2s ease;}
 .dash-user:hover{background:var(--app-bg-deep);}
 .dash-user-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1.5px solid var(--red);}
@@ -778,14 +778,17 @@ footer{background:var(--ink);color:rgba(255,255,255,.65);padding:80px 0 0;}
 }
 
 /* ===== Real Leaflet map with custom avatar markers ===== */
-.leaflet-map-el{position:absolute;inset:0;width:100%;height:100%;isolation:isolate;z-index:0;}
-.leaflet-pin{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
-.leaflet-pin-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;border:3px solid var(--red);box-shadow:0 8px 18px rgba(0,0,0,.22);background:#fff;}
-.leaflet-pin.busy .leaflet-pin-avatar{border-color:var(--ink);}
-.leaflet-pin-avatar img{width:100%;height:100%;object-fit:cover;}
-.leaflet-pin-price{margin-top:4px;background:#fff;border-radius:10px;padding:3px 8px;box-shadow:0 4px 10px rgba(0,0,0,.15);text-align:center;line-height:1.2;white-space:nowrap;}
-.leaflet-pin-price b{display:block;font-size:11px;font-weight:700;color:var(--ink);}
-.leaflet-pin-price span{display:block;font-size:9px;color:var(--text-mute);}
+.gmap-map-el{position:absolute;inset:0;width:100%;height:100%;isolation:isolate;z-index:0;}
+.gmap-pin{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
+.gmap-pin-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;border:3px solid var(--red);box-shadow:0 8px 18px rgba(0,0,0,.22);background:#fff;}
+.gmap-pin.busy .gmap-pin-avatar{border-color:var(--ink);}
+.gmap-pin-avatar img{width:100%;height:100%;object-fit:cover;}
+.gmap-pin-price{margin-top:4px;background:#fff;border-radius:10px;padding:3px 8px;box-shadow:0 4px 10px rgba(0,0,0,.15);text-align:center;line-height:1.2;white-space:nowrap;}
+.gmap-pin-price b{display:block;font-size:11px;font-weight:700;color:var(--ink);}
+.gmap-pin-price span{display:block;font-size:9px;color:var(--text-mute);}
+.gmap-fallback{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:32px;background:var(--cream-deep);color:var(--text-soft);font-size:13px;line-height:1.6;}
+.gmap-fallback b{color:var(--ink);}
+.gmap-fallback code{background:var(--code-bg,#f4f3ec);padding:2px 6px;border-radius:4px;font-size:12px;}
 .bli-area{font-weight:500;color:var(--text-mute);font-size:12px;}
 
 /* ===== Max-width wrapper so track/list content doesn't stretch edge-to-edge on wide screens ===== */

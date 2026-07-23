@@ -10,10 +10,11 @@ import SignUp from './pages/SignUp';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import MasseuseDashboard from './pages/MasseuseDashboard';
 
 function Shell() {
   const location = useLocation();
-  const bare = ['/dashboard', '/login', '/signup', '/admin'].includes(location.pathname);
+  const bare = ['/dashboard', '/login', '/signup', '/admin', '/masseuse'].includes(location.pathname);
 
   return (
     <>
@@ -28,6 +29,7 @@ function Shell() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/masseuse" element={<MasseuseDashboard />} />
       </Routes>
       {!bare && <Footer />}
     </>

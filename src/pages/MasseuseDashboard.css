@@ -1,0 +1,107 @@
+/* ============================================================
+   Masseuse Dashboard — therapist-facing counterpart to
+   AdminDashboard.css. Reuses the shared .dash-shell system from
+   styles.css; adds the availability toggle, job-request cards,
+   earnings balance card, and chat thread pieces.
+   ============================================================ */
+
+/* ---- Status pill (same look as AdminDashboard's, kept local so this
+   page doesn't depend on importing another page's stylesheet) ---- */
+.adm-status-pill{font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:100px;white-space:nowrap;display:inline-block;}
+.adm-status-pill.upcoming{background:#FCF1DC;color:#9C7A1D;}
+.adm-status-pill.ongoing{background:#FDEBEB;color:var(--red);}
+.adm-status-pill.completed{background:var(--app-bg-deep);color:var(--text-soft);}
+
+/* ---- Availability toggle ---- */
+.mss-availability{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:18px;margin-bottom:24px;transition:background .2s ease;}
+.mss-availability.online{background:linear-gradient(135deg,var(--app-black-soft) 0%,var(--app-black) 75%);}
+.mss-availability.offline{background:var(--paper);border:1px solid var(--line);}
+.mss-availability-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mss-availability.online .mss-availability-icon{background:rgba(47,167,90,.18);color:var(--app-green);}
+.mss-availability.offline .mss-availability-icon{background:var(--app-bg-deep);color:var(--text-mute);}
+.mss-availability-body{flex:1;min-width:0;}
+.mss-availability-body h4{font-size:14.5px;font-weight:700;margin-bottom:2px;}
+.mss-availability.online .mss-availability-body h4{color:#fff;}
+.mss-availability.offline .mss-availability-body h4{color:var(--ink);}
+.mss-availability-body p{font-size:11.5px;}
+.mss-availability.online .mss-availability-body p{color:rgba(255,255,255,.55);}
+.mss-availability.offline .mss-availability-body p{color:var(--text-mute);}
+
+/* Reuse the same on/off switch look as AdminDashboard's promo toggle */
+.mss-switch{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;}
+.mss-switch input{opacity:0;width:0;height:0;}
+.mss-switch-track{position:absolute;inset:0;background:rgba(255,255,255,.2);border-radius:100px;transition:background .2s ease;cursor:pointer;}
+.mss-availability.offline .mss-switch-track{background:var(--line);}
+.mss-switch-track::before{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.mss-switch input:checked + .mss-switch-track{background:var(--app-green);}
+.mss-switch input:checked + .mss-switch-track::before{transform:translateX(18px);}
+
+/* ---- Schedule cards ---- */
+.mss-schedule-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;}
+.mss-schedule-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;}
+.mss-schedule-top b{font-size:13.5px;font-weight:700;color:var(--ink);}
+.mss-schedule-card p{font-size:12px;color:var(--text-mute);margin:2px 0;}
+.mss-schedule-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.mss-schedule-foot b{color:var(--app-green);font-size:13px;font-weight:800;}
+
+/* ---- Job requests ---- */
+.mss-request-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px;}
+.mss-request-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.mss-request-avatar{width:42px;height:42px;border-radius:50%;background:var(--app-bg-deep);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.mss-request-top-body{flex:1;min-width:0;}
+.mss-request-top-body h5{font-size:14px;font-weight:700;color:var(--ink);}
+.mss-request-top-body span{font-size:12px;color:var(--text-mute);}
+.mss-request-price{font-size:15px;font-weight:800;color:var(--app-green);flex-shrink:0;}
+.mss-request-meta{display:flex;align-items:center;gap:8px;color:var(--text-mute);font-size:12px;margin-bottom:4px;}
+.mss-request-meta svg{color:var(--red);flex-shrink:0;}
+.mss-request-actions{display:flex;gap:10px;margin-top:14px;}
+.mss-request-actions .btn{flex:1;width:auto;padding:12px;font-size:12.5px;}
+
+/* ---- Earnings ---- */
+.mss-balance-card{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--red-glow) 0%,var(--red-deep) 100%);border-radius:20px;padding:26px 28px;color:#fff;margin-bottom:18px;}
+.mss-balance-card span{font-size:12px;color:rgba(255,255,255,.75);letter-spacing:.5px;text-transform:uppercase;font-weight:700;}
+.mss-balance-card b{display:block;font-family:var(--font-display);font-size:34px;font-weight:600;margin:8px 0 18px;}
+.mss-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;}
+.mss-earn-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;}
+.mss-earn-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mss-earn-icon.credit{background:#E4F5EA;color:var(--app-green);}
+.mss-earn-icon.debit{background:#FDEBEB;color:var(--red);}
+.mss-earn-body{flex:1;min-width:0;}
+.mss-earn-body b{display:block;font-size:12.5px;font-weight:700;color:var(--ink);}
+.mss-earn-body span{font-size:10.5px;color:var(--text-mute);}
+.mss-earn-amount{font-size:13px;font-weight:800;}
+.mss-earn-amount.credit{color:var(--app-green);}
+.mss-earn-amount.debit{color:var(--ink);}
+
+/* ---- Messages ---- */
+.mss-thread-item{display:flex;gap:14px;padding:14px 4px;border-top:1px solid var(--line);cursor:pointer;}
+.mss-thread-item:first-child{border-top:none;}
+.mss-thread-item:hover{background:var(--app-bg-deep);border-radius:12px;}
+.mss-thread-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--app-bg-deep);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:700;}
+.mss-thread-body{flex:1;min-width:0;}
+.mss-thread-top{display:flex;justify-content:space-between;gap:8px;}
+.mss-thread-top b{font-size:13.5px;font-weight:700;color:var(--ink);}
+.mss-thread-top span{font-size:10.5px;color:var(--text-mute);flex-shrink:0;}
+.mss-thread-body p{font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mss-unread-dot{width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+.mss-thread{display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto;padding:4px 2px 12px;margin-bottom:14px;}
+.mss-bubble{max-width:78%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;}
+.mss-bubble.client{align-self:flex-start;background:var(--app-bg-deep);color:var(--ink);}
+.mss-bubble.mine{align-self:flex-end;background:var(--red);color:#fff;}
+.mss-reply-row{display:flex;gap:10px;}
+.mss-reply-row input{flex:1;border:1.5px solid var(--line);border-radius:100px;padding:12px 16px;font-family:inherit;font-size:13px;outline:none;background:var(--cream);}
+.mss-reply-row input:focus{border-color:var(--gold);}
+.mss-reply-send{width:44px;height:44px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:0;cursor:pointer;}
+
+/* ---- Profile & settings ---- */
+.mss-profile-wrap{max-width:560px;margin:0 auto;}
+.mss-profile-wrap .profile-card .mss-profile-photo{position:relative;width:76px;height:76px;flex-shrink:0;}
+.mss-profile-wrap .profile-card .mss-profile-photo img{width:76px;height:76px;border-radius:50%;object-fit:cover;display:block;}
+.mss-photo-edit{position:absolute;bottom:-2px;right:-2px;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--paper);cursor:pointer;}
+.mss-inline-form{padding:16px 4px 6px;margin-bottom:6px;}
+.mss-inline-form .modal-field{margin-bottom:14px;}
+
+@media(max-width:600px){
+  .mss-stat-row{grid-template-columns:1fr;}
+}

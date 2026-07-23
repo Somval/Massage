@@ -8,7 +8,9 @@ import LoginImg from '../images/Logi.png';
 // before launch — anything shipped to the browser can be read by anyone
 // who opens devtools.
 const ADMIN_EMAIL = 'admin@massagenownow.com';
-const ADMIN_PASSWORD = '12345678';
+const ADMIN_PASSWORD = '12345';
+const MASSEUSE_EMAIL = 'therapist@massagenownow.com';
+const MASSEUSE_PASSWORD = '12345';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,6 +21,10 @@ export default function Login() {
     e.preventDefault();
     if (email.trim() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       navigate('/admin');
+      return;
+    }
+    if (email.trim() === MASSEUSE_EMAIL && password === MASSEUSE_PASSWORD) {
+      navigate('/masseuse');
       return;
     }
     navigate('/dashboard');

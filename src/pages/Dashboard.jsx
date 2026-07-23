@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import 'leaflet/dist/leaflet.css';
+import { Loader } from '@googlemaps/js-api-loader';
 import logoMark from '../images/logo-mark.png';
 import chidi from '../images/Chidi.jpeg';
 import ada from '../images/Ada.jpg';
@@ -136,54 +136,129 @@ const NEARBY_MASSEUSES = [
   { name: 'Maria', rating: '4.9', reviews: 128, years: '7+ Years Experience', tags: 'Swedish · Deep Tissue', price: '₦24,000', away: '5 min away', available: false, img: FEATURED[2].img, area: 'Ikoyi', lat: 6.4547, lng: 3.4340 },
 ];
 
+// Loaded once and reused — the loader's own .load() call is cached
+// internally, so re-invoking it (e.g. on remount) is safe and cheap.
+const mapsLoader = new Loader({
+  apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+  version: 'weekly',
+});
+
+// google.maps.OverlayView only exists once the API script has loaded, so
+// the custom avatar-and-price pin class is built lazily on first use and
+// cached here rather than defined at module scope.
+let PinOverlayClass = null;
+function getPinOverlayClass(google) {
+  if (PinOverlayClass) return PinOverlayClass;
+  class PinOverlay extends google.maps.OverlayView {
+    constructor({ position, html, onClick }) {
+      super();
+      this.position = position;
+      this.html = html;
+      this.onClick = onClick;
+      this.div = null;
+    }
+    onAdd() {
+      this.div = document.createElement('div');
+      this.div.innerHTML = this.html;
+      this.div.style.position = 'absolute';
+      this.div.style.cursor = 'pointer';
+      this.div.style.transform = 'translate(-50%, -100%)';
+      this.div.addEventListener('click', () => this.onClick && this.onClick());
+      this.getPanes().overlayMouseTarget.appendChild(this.div);
+    }
+    draw() {
+      const projection = this.getProjection();
+      if (!projection || !this.div) return;
+      const point = projection.fromLatLngToDivPixel(this.position);
+      if (point) {
+        this.div.style.left = `${point.x}px`;
+        this.div.style.top = `${point.y}px`;
+      }
+    }
+    onRemove() {
+      if (this.div) {
+        this.div.parentNode?.removeChild(this.div);
+        this.div = null;
+      }
+    }
+    setVisible(visible) {
+      if (this.div) this.div.style.display = visible ? '' : 'none';
+    }
+  }
+  PinOverlayClass = PinOverlay;
+  return PinOverlay;
+}
+
 function LagosMap({ masseuses, selected, onSelect }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
-  const markersRef = useRef({});
+  const overlaysRef = useRef({});
+  const [mapError, setMapError] = useState(null);
 
   useEffect(() => {
+    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+      setMapError('missing-key');
+      return;
+    }
     let cancelled = false;
-    import('leaflet').then((L) => {
+    mapsLoader.load().then((google) => {
       if (cancelled || !mapRef.current || mapInstance.current) return;
-      const map = L.map(mapRef.current, { zoomControl: false, attributionControl: true }).setView([6.5, 3.42], 11);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 18,
-      }).addTo(map);
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      const map = new google.maps.Map(mapRef.current, {
+        center: { lat: 6.5, lng: 3.42 },
+        zoom: 11,
+        disableDefaultUI: true,
+        zoomControl: true,
+        zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
+      });
       mapInstance.current = map;
 
+      const PinOverlay = getPinOverlayClass(google);
       masseuses.forEach((m) => {
-        const icon = L.divIcon({
-          className: '',
-          html: `<div class="leaflet-pin ${m.available ? 'available' : 'busy'}"><div class="leaflet-pin-avatar"><img src="${m.img}" /></div><div class="leaflet-pin-price"><b>${m.price}</b><span>${m.away}</span></div></div>`,
-          iconSize: [1, 1],
-          iconAnchor: [30, 62],
+        const html = `<div class="gmap-pin ${m.available ? 'available' : 'busy'}"><div class="gmap-pin-avatar"><img src="${m.img}" /></div><div class="gmap-pin-price"><b>${m.price}</b><span>${m.away}</span></div></div>`;
+        const overlay = new PinOverlay({
+          position: new google.maps.LatLng(m.lat, m.lng),
+          html,
+          onClick: () => onSelect(m),
         });
-        const marker = L.marker([m.lat, m.lng], { icon }).addTo(map);
-        marker.on('click', () => onSelect(m));
-        markersRef.current[m.name] = marker;
+        overlay.setMap(map);
+        overlaysRef.current[m.name] = overlay;
       });
-    });
+    }).catch(() => setMapError('load-failed'));
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (mapInstance.current && selected) {
-      mapInstance.current.flyTo([selected.lat, selected.lng], 13, { duration: 0.6 });
+      mapInstance.current.panTo({ lat: selected.lat, lng: selected.lng });
+      mapInstance.current.setZoom(13);
     }
   }, [selected]);
 
   useEffect(() => {
     const visibleNames = new Set(masseuses.map((m) => m.name));
-    Object.entries(markersRef.current).forEach(([name, marker]) => {
-      const el = marker.getElement();
-      if (el) el.style.display = visibleNames.has(name) ? '' : 'none';
+    Object.entries(overlaysRef.current).forEach(([name, overlay]) => {
+      overlay.setVisible(visibleNames.has(name));
     });
   }, [masseuses]);
 
-  return <div className="leaflet-map-el" ref={mapRef} />;
+  if (mapError === 'missing-key') {
+    return (
+      <div className="gmap-map-el gmap-fallback">
+        <p><b>Google Maps API key not set.</b></p>
+        <p>Copy <code>.env.example</code> to <code>.env</code>, add a Maps JavaScript API key from Google Cloud Console, and restart the dev server.</p>
+      </div>
+    );
+  }
+  if (mapError === 'load-failed') {
+    return (
+      <div className="gmap-map-el gmap-fallback">
+        <p><b>Couldn't load Google Maps.</b></p>
+        <p>Check that the API key is valid and that "Maps JavaScript API" is enabled for it in Google Cloud Console.</p>
+      </div>
+    );
+  }
+  return <div className="gmap-map-el" ref={mapRef} />;
 }
 
 function TrackingPanel({ booking }) {
