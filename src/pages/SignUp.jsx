@@ -14,7 +14,7 @@ export default function SignUp() {
             <span className="logo-word">Massage<small>Now Now</small></span>
           </Link>
           <h2>Your first session is <em>waiting.</em></h2>
-          <p>Create an account to book instantly, track your therapist live, and save your favourite treatments — on the web or in the app.</p>
+          <p>Create an account to book instantly, track your masseuse live, and save your favourite treatments — on the web or in the app.</p>
         </div>
       </div>
       <div className="auth-form-side">

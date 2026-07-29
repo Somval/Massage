@@ -9,13 +9,13 @@ import amaka from '../images/Amaka.jpg';
 import Logi from '../images/Logi.png';
 
 const VALUES = [
-  { icon: 'M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z', title: 'Verified & Vetted', desc: 'Every therapist passes a background check, certification review and in-person skills test.' },
+  { icon: 'M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z', title: 'Verified & Vetted', desc: 'Every masseuse passes a background check, certification review and in-person skills test.' },
   { icon: 'M20 12c0 4-3.6 7-8 9-4.4-2-8-5-8-9a4 4 0 018-1.5A4 4 0 0120 12z', title: 'Client-First Care', desc: 'Your comfort and privacy guide every part of how we design each session.' },
-  { icon: 'M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z', title: 'Always On Time', desc: 'Real-time matching means your therapist is never more than a short ride away.' },
+  { icon: 'M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z', title: 'Always On Time', desc: 'Real-time matching means your masseuse is never more than a short ride away.' },
 ];
 
 const TEAM = [
-  { name: 'Diana', role: 'Lead Therapist · Swedish', img: chidi },
+  { name: 'Diana', role: 'Lead Masseuse · Swedish', img: chidi },
   { name: 'Chidi', role: 'Sports & Hot Stone', img: ada },
   { name: 'Ada', role: 'Aromatherapy & Prenatal', img: chi },
   { name: 'Femi', role: 'Deep Tissue Specialist', img: amaka },

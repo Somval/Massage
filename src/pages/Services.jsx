@@ -7,7 +7,7 @@ const SERVICES = [
   { num: '03', name: 'Hot Stone Therapy', desc: 'Heated basalt stones melt away deep muscle tension.', price: 'From ₦26,000', img: 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=600&h=800&fit=crop' },
   { num: '04', name: 'Aromatherapy', desc: 'Essential-oil blends paired with gentle strokes to calm the mind.', price: 'From ₦20,000', img: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600&h=800&fit=crop' },
   { num: '05', name: 'Sports Recovery', desc: 'Pre- or post-training work focused on mobility and injury prevention.', price: 'From ₦24,000', img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=800&fit=crop' },
-  { num: '06', name: 'Prenatal Massage', desc: 'Specially trained therapists using safe positioning for expecting mothers.', price: 'From ₦22,000', img: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=600&h=800&fit=crop' },
+  { num: '06', name: 'Prenatal Massage', desc: 'Specially trained masseuses using safe positioning for expecting mothers.', price: 'From ₦22,000', img: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=600&h=800&fit=crop' },
 ];
 
 export default function Services() {

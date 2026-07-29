@@ -6,7 +6,7 @@ const links = [
   { to: '/', label: 'Home' },
   { to: '/services', label: 'Services' },
   { to: '/how-it-works', label: 'How It Works' },
-  { to: '/therapists', label: 'Become a Therapist' },
+  { to: '/therapists', label: 'Become a Masseuse' },
   { to: '/contact', label: 'Contact' },
 ];
 

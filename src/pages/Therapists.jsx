@@ -19,10 +19,10 @@ export default function Therapists() {
     <>
       <section className="page-hero therapists-hero">
         <div className="container therapists-hero__inner">
-          <span className="eyebrow">For therapists</span>
+          <span className="eyebrow">For masseuses</span>
           <h1>Bring your skill. We'll bring the clients.</h1>
           <p>
-            Join a network of trained, verified massage therapists earning on
+            Join a network of trained, verified masseuses earning on
             their own schedule across Lagos.
           </p>
           <a href="#apply" className="btn btn-primary">
@@ -34,7 +34,7 @@ export default function Therapists() {
       <section className="section perks">
         <div className="container">
           <div className="section__head">
-            <span className="eyebrow">Why therapists choose us</span>
+            <span className="eyebrow">Why masseuses choose us</span>
             <h2>Built around your time, not ours.</h2>
           </div>
           <div className="perks__grid">

@@ -33,7 +33,7 @@ const EARNINGS_HISTORY = [
 
 const THREADS = [
   { id: 1, client: 'Amanda O.', message: 'Great, see you at 4pm!', time: '10 mins ago', unread: 1 },
-  { id: 2, client: 'Kunle T.', message: 'Is the therapist on the way?', time: '35 mins ago', unread: 2 },
+  { id: 2, client: 'Kunle T.', message: 'Is the masseuse on the way?', time: '35 mins ago', unread: 2 },
   { id: 3, client: 'Sarah K.', message: 'Thank you, that was wonderful.', time: 'Yesterday', unread: 0 },
 ];
 

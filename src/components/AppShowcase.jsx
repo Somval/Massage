@@ -6,16 +6,16 @@ const FEATURES = [
   {
     icon: 'M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
     title: 'Book in under a minute',
-    desc: 'Pick a treatment, set your location, and get matched with a verified therapist nearby — live tracking included.',
+    desc: 'Pick a treatment, set your location, and get matched with a verified masseuse nearby — live tracking included.',
   },
   {
     icon: 'M3 6h18v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6zM16 13h3M3 9h18',
     title: 'One wallet for every session',
-    desc: 'Fund your wallet in Naira, pay with Paystack or Flutterwave, and reorder your favourite therapist in a tap.',
+    desc: 'Fund your wallet in Naira, pay with Paystack or Flutterwave, and reorder your favourite masseuse in a tap.',
   },
   {
     icon: 'M21 11.5a8.4 8.4 0 01-9 8.4A8.9 8.9 0 013 12a8.4 8.4 0 019-8.5 8.6 8.6 0 019 8z',
-    title: 'Chat with your therapist',
+    title: 'Chat with your masseuse',
     desc: 'Share access notes, confirm arrival, and keep every booking\'s conversation in one place.',
   },
 ];
@@ -27,7 +27,7 @@ export default function AppShowcase() {
         <Reveal className="app-showcase-copy">
           <div className="eyebrow" style={{ justifyContent: 'flex-start' }}>Now In Your Pocket</div>
           <h2>The full studio, <em>in the app.</em></h2>
-          <p>Everything you can do on the website — and more — lives in the MassageNowNow app: live therapist tracking, an in-app wallet, and booking history that syncs the moment you log in.</p>
+          <p>Everything you can do on the website — and more — lives in the MassageNowNow app: live masseuse tracking, an in-app wallet, and booking history that syncs the moment you log in.</p>
           <div className="app-feature-list">
             {FEATURES.map((f) => (
               <div className="app-feature" key={f.title}>

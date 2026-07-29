@@ -2,9 +2,9 @@ import Reveal from './Reveal';
 import trackingImg from '../images/app/discover-2.png';
 
 const POINTS = [
-  { title: 'Real-time ETA', desc: 'See exactly when your therapist will arrive, down to the minute.' },
-  { title: 'Verified check-in', desc: 'Get notified the moment your therapist checks in at your door.' },
-  { title: 'Direct chat & call', desc: 'Message or call your therapist straight from the tracking screen.' },
+  { title: 'Real-time ETA', desc: 'See exactly when your masseuse will arrive, down to the minute.' },
+  { title: 'Verified check-in', desc: 'Get notified the moment your masseuse checks in at your door.' },
+  { title: 'Direct chat & call', desc: 'Message or call your masseuse straight from the tracking screen.' },
 ];
 
 export default function LiveTracking() {
@@ -19,8 +19,8 @@ export default function LiveTracking() {
 
         <Reveal className="live-tracking-copy">
           <div className="eyebrow">Live Tracking</div>
-          <h2>Watch your therapist arrive, <em>in real time.</em></h2>
-          <p>No more guessing when they'll show up. From the moment your booking is confirmed, track your therapist's route, ETA, and check-in — right down to your street.</p>
+          <h2>Watch your masseuse arrive, <em>in real time.</em></h2>
+          <p>No more guessing when they'll show up. From the moment your booking is confirmed, track your masseuse's route, ETA, and check-in — right down to your street.</p>
           <div className="live-tracking-points">
             {POINTS.map((p) => (
               <div className="ltp-item" key={p.title}>

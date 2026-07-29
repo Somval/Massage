@@ -52,7 +52,7 @@ export default function ContactPage() {
               <div style={{ background: 'var(--cream-deep)', border: '1px solid var(--line)', borderRadius: 10, padding: '18px 22px', marginBottom: 26, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="1.8" style={{ flexShrink: 0 }}><path d="M12 8v4l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <p style={{ fontSize: 13.5, color: 'var(--text-soft)', flex: 1, minWidth: 220 }}>
-                  Looking to book a session? Bookings are made from your MassageNowNow dashboard so you can track your therapist live.
+                  Looking to book a session? Bookings are made from your MassageNowNow dashboard so you can track your masseuse live.
                 </p>
                 <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
                   <Link to="/login" className="btn btn-outline-dark" style={{ padding: '10px 18px' }}>Log In</Link>

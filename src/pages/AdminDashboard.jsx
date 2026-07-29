@@ -10,10 +10,12 @@ import './AdminDashboard.css';
 const NAV = [
   { key: 'overview',    label: 'Overview',            icon: 'M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z' },
   { key: 'bookings',    label: 'Bookings & scheduling', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
+  { key: 'therapists',  label: 'Masseuses',            icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
+  { key: 'users',       label: 'Users',                icon: 'M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 20a7 7 0 0 1 14 0M17 8a3 3 0 1 1 0 6M22 20a6 6 0 0 0-4.5-5.8' },
   { key: 'support',     label: 'Support inbox',        icon: 'M4 5h16v11H8l-4 4z' },
   { key: 'reviews',     label: 'Reviews & disputes',   icon: 'M12 2l2.5 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.5-.5z' },
   { key: 'promotions',  label: 'Promotions',           icon: 'M20 13 13 20a1.5 1.5 0 0 1-2 0L4 13V4h9zM8 8h.01' },
-  { key: 'reports',     label: 'Reports & analytics',  icon: 'M4 20V10M10 20V4M16 20v-7M4 20h16' },
+  // { key: 'reports',     label: 'Reports & analytics',  icon: 'M4 20V10M10 20V4M16 20v-7M4 20h16' },
 ];
 
 const AREAS = [
@@ -26,6 +28,23 @@ const AREAS = [
 ];
 
 const ALL_THERAPISTS = ['Diana', 'Chidi', 'Ada', 'Grace', 'Blessing', 'Tolu', 'Femi', 'Maria'];
+
+const LAGOS_AREAS = ['Ikeja', 'Yaba', 'Ikoyi', 'Lekki Phase 1', 'Victoria Island', 'Surulere'];
+
+const INITIAL_THERAPIST_ROSTER = [
+  { id: 1, name: 'Diana', email: 'diana@massagenownow.com', phone: '+234 801 111 2222', area: 'Ikeja', specialties: 'Swedish · Deep Tissue · Aromatherapy', rating: 4.9, reviews: 128, available: true },
+  { id: 2, name: 'Chidi', email: 'chidi@massagenownow.com', phone: '+234 801 234 5678', area: 'Lekki Phase 1', specialties: 'Sports · Hot Stone', rating: 4.8, reviews: 96, available: false },
+  { id: 3, name: 'Ada', email: 'ada@massagenownow.com', phone: '+234 802 222 3333', area: 'Yaba', specialties: 'Aromatherapy · Prenatal', rating: 5.0, reviews: 140, available: true },
+  { id: 4, name: 'Tolu', email: 'tolu@massagenownow.com', phone: '+234 803 333 4444', area: 'Ikoyi', specialties: 'Deep Tissue', rating: 4.6, reviews: 51, available: false },
+  { id: 5, name: 'Femi', email: 'femi@massagenownow.com', phone: '+234 804 444 5555', area: 'Ikoyi', specialties: 'Deep Tissue · Sports', rating: 4.5, reviews: 39, available: false },
+];
+
+const INITIAL_USERS = [
+  { id: 1, name: 'Amanda O.', email: 'amanda.o@gmail.com', phone: '+234 805 555 1111', joined: '12 Jun 2026', bookings: 6, status: 'active' },
+  { id: 2, name: 'Kunle T.', email: 'kunle.t@gmail.com', phone: '+234 806 555 2222', joined: '3 May 2026', bookings: 3, status: 'active' },
+  { id: 3, name: 'Ify N.', email: 'ify.n@gmail.com', phone: '+234 807 555 3333', joined: '20 Apr 2026', bookings: 9, status: 'active' },
+  { id: 4, name: 'Peter A.', email: 'peter.a@gmail.com', phone: '+234 808 555 4444', joined: '2 Jul 2026', bookings: 1, status: 'suspended' },
+];
 
 const INITIAL_ADMIN_BOOKINGS = [
   { id: 1, reference: 'MNN-BK-7719264', customer: 'Amanda O.', therapist: 'Diana', service: 'Deep Tissue Massage', date: 'Wed, 22 Jul', time: '4:00 PM – 5:30 PM', area: 'Lekki Phase 1', total: '₦24,000', status: 'upcoming' },
@@ -44,12 +63,12 @@ const INITIAL_PROMO_CODES = [
 
 const REVIEWS = [
   { customer: 'Amanda O.', therapist: 'Diana', rating: 5.0, comment: 'Excellent deep tissue session, very professional.', date: '2 days ago', flagged: false },
-  { customer: 'Kunle T.', therapist: 'Grace', rating: 2.0, comment: 'Therapist arrived 40 minutes late with no notice.', date: '3 days ago', flagged: true },
+  { customer: 'Kunle T.', therapist: 'Grace', rating: 2.0, comment: 'Masseuse arrived 40 minutes late with no notice.', date: '3 days ago', flagged: true },
   { customer: 'Ify N.', therapist: 'Chidi', rating: 4.5, comment: 'Great sports massage, would book again.', date: '5 days ago', flagged: false },
 ];
 
 const INITIAL_DISPUTES = [
-  { reference: 'MNN-BK-7708821', customer: 'Peter A.', therapist: 'Blessing', reason: 'Therapist cancelled last minute', amount: '₦22,000', status: 'open' },
+  { reference: 'MNN-BK-7708821', customer: 'Peter A.', therapist: 'Blessing', reason: 'Masseuse cancelled last minute', amount: '₦22,000', status: 'open' },
   { reference: 'MNN-BK-7719302', customer: 'Kunle T.', therapist: 'Grace', reason: 'Late arrival, requesting partial refund', amount: '₦10,000', status: 'investigating' },
   { reference: 'MNN-BK-7705310', customer: 'Ngozi E.', therapist: 'Tolu', reason: 'Duplicate charge on card', amount: '₦25,000', status: 'resolved' },
 ];
@@ -57,7 +76,7 @@ const INITIAL_DISPUTES = [
 const TICKETS = [
   { id: 1, customer: 'Peter A.', subject: 'Refund not received', message: 'It has been 5 days since the cancellation, I still have not received my refund.', time: '10 mins ago', status: 'open' },
   { id: 2, customer: 'Ngozi E.', subject: 'App charged me twice', message: 'Can you confirm the second charge was reversed? My bank shows it as pending.', time: '1 hour ago', status: 'pending' },
-  { id: 3, customer: 'Sarah K.', subject: 'Therapist details question', message: 'Thanks for clarifying, all good now!', time: 'Yesterday', status: 'resolved' },
+  { id: 3, customer: 'Sarah K.', subject: 'Masseuse details question', message: 'Thanks for clarifying, all good now!', time: 'Yesterday', status: 'resolved' },
   { id: 4, customer: 'Kunle T.', subject: 'Late arrival complaint', message: 'I would like a partial refund for the delay yesterday.', time: '2 days ago', status: 'open' },
 ];
 
@@ -107,7 +126,7 @@ function BookingDetailModal({ booking, onClose, onReassign, onCancel }) {
         <h3>{booking.service} for {booking.customer}</h3>
         <p>{booking.date} · {booking.time} · {booking.area}</p>
         <div className="modal-field" style={{ marginTop: 20 }}>
-          <label>Reassign therapist</label>
+          <label>Reassign masseuse</label>
           <div className="adm-chip-row">
             {ALL_THERAPISTS.map((name) => (
               <button
@@ -189,6 +208,134 @@ function CreatePromoModal({ onClose, onCreate }) {
   );
 }
 
+function CreateTherapistModal({ onClose, onCreate }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', area: LAGOS_AREAS[0], specialties: '', password: '' });
+  const [error, setError] = useState('');
+  const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim()) {
+      setError('Name and email are required.');
+      return;
+    }
+    onCreate({
+      id: Date.now(),
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim() || 'Not provided',
+      area: form.area,
+      specialties: form.specialties.trim() || 'Not specified yet',
+      rating: 0,
+      reviews: 0,
+      available: false,
+    });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <h3>Add a masseuse</h3>
+        <p>Creates a new masseuse account. They'll be able to sign in with the email and temporary password below.</p>
+        <form onSubmit={submit}>
+          <div className="modal-field">
+            <label>Full name</label>
+            <input type="text" placeholder="e.g. Grace Adeyemi" required value={form.name} onChange={update('name')} />
+          </div>
+          <div className="modal-row">
+            <div className="modal-field">
+              <label>Email</label>
+              <input type="email" placeholder="name@massagenownow.com" required value={form.email} onChange={update('email')} />
+            </div>
+            <div className="modal-field">
+              <label>Phone</label>
+              <input type="tel" placeholder="+234..." value={form.phone} onChange={update('phone')} />
+            </div>
+          </div>
+          <div className="modal-row">
+            <div className="modal-field">
+              <label>Base area</label>
+              <select value={form.area} onChange={update('area')}>
+                {LAGOS_AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div className="modal-field">
+              <label>Specialties</label>
+              <input type="text" placeholder="e.g. Swedish · Hot Stone" value={form.specialties} onChange={update('specialties')} />
+            </div>
+          </div>
+          <div className="modal-field">
+            <label>Temporary password</label>
+            <input type="text" placeholder="Set a temporary password" value={form.password} onChange={update('password')} />
+          </div>
+          {error && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+          <button type="submit" className="btn btn-red btn-block" style={{ marginTop: 6 }}>Create masseuse account</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function CreateUserModal({ onClose, onCreate }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
+  const [error, setError] = useState('');
+  const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim()) {
+      setError('Name and email are required.');
+      return;
+    }
+    onCreate({
+      id: Date.now(),
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim() || 'Not provided',
+      joined: 'Today',
+      bookings: 0,
+      status: 'active',
+    });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose} aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <h3>Add a user</h3>
+        <p>Creates a new customer account manually — useful for phone or in-person bookings.</p>
+        <form onSubmit={submit}>
+          <div className="modal-field">
+            <label>Full name</label>
+            <input type="text" placeholder="e.g. Amanda Okoro" required value={form.name} onChange={update('name')} />
+          </div>
+          <div className="modal-row">
+            <div className="modal-field">
+              <label>Email</label>
+              <input type="email" placeholder="name@example.com" required value={form.email} onChange={update('email')} />
+            </div>
+            <div className="modal-field">
+              <label>Phone</label>
+              <input type="tel" placeholder="+234..." value={form.phone} onChange={update('phone')} />
+            </div>
+          </div>
+          <div className="modal-field">
+            <label>Temporary password</label>
+            <input type="text" placeholder="Set a temporary password" value={form.password} onChange={update('password')} />
+          </div>
+          {error && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+          <button type="submit" className="btn btn-red btn-block" style={{ marginTop: 6 }}>Create user account</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tab, setTab] = useState('overview');
@@ -199,6 +346,14 @@ export default function AdminDashboard() {
   const [bookingFilter, setBookingFilter] = useState('all');
   const [bookingQuery, setBookingQuery] = useState('');
   const [activeBooking, setActiveBooking] = useState(null);
+
+  // Therapists
+  const [therapists, setTherapists] = useState(INITIAL_THERAPIST_ROSTER);
+  const [showAddTherapist, setShowAddTherapist] = useState(false);
+
+  // Users
+  const [users, setUsers] = useState(INITIAL_USERS);
+  const [showAddUser, setShowAddUser] = useState(false);
 
   // Promotions
   const [promoCodes, setPromoCodes] = useState(INITIAL_PROMO_CODES);
@@ -230,6 +385,20 @@ export default function AdminDashboard() {
     setActiveBooking(null);
   };
 
+  const addTherapist = (t) => {
+    setTherapists([t, ...therapists]);
+    setShowAddTherapist(false);
+  };
+
+  const addUser = (u) => {
+    setUsers([u, ...users]);
+    setShowAddUser(false);
+  };
+
+  const toggleUserStatus = (id) => {
+    setUsers(users.map((u) => (u.id === id ? { ...u, status: u.status === 'active' ? 'suspended' : 'active' } : u)));
+  };
+
   const togglePromo = (code) => {
     setPromoCodes(promoCodes.map((p) => (p.code === code ? { ...p, active: !p.active } : p)));
   };
@@ -247,7 +416,7 @@ export default function AdminDashboard() {
   const STATS = [
     { label: 'Bookings today', value: '47', trend: '+12%', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
     { label: 'Revenue today', value: '₦1.28m', trend: '+8%', icon: 'M4 7h16v12H4zM4 7V5h13M16 13h3' },
-    { label: 'Therapists on duty', value: '18', trend: '18 of 24', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
+    { label: 'Masseuses on duty', value: '18', trend: '18 of 24', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
     { label: 'Payouts to review', value: '₦340k', trend: '6 pending', icon: 'M5 12l5 5 9-10' },
   ];
 
@@ -298,10 +467,12 @@ export default function AdminDashboard() {
               <p>
                 {tab === 'overview' && 'Lagos operations, live.'}
                 {tab === 'bookings' && 'Every booking across the fleet.'}
+                {tab === 'therapists' && 'Manage the masseuse roster and add new accounts.'}
+                {tab === 'users' && 'Manage customer accounts.'}
                 {tab === 'support' && 'Customer questions and complaints.'}
                 {tab === 'reviews' && 'Keep an eye on quality and resolve complaints.'}
                 {tab === 'promotions' && 'Discount codes across the app.'}
-                {tab === 'reports' && 'How the business is trending this week.'}
+                {/* {tab === 'reports' && 'How the business is trending this week.'} */}
               </p>
             </div>
           </div>
@@ -309,7 +480,7 @@ export default function AdminDashboard() {
             {tab === 'bookings' && (
               <div className="adm-search">
                 <Icon path="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-4.3-4.3" size={16} />
-                <input placeholder="Search customer, therapist, ref..." value={bookingQuery} onChange={(e) => setBookingQuery(e.target.value)} />
+                <input placeholder="Search customer, masseuse, ref..." value={bookingQuery} onChange={(e) => setBookingQuery(e.target.value)} />
               </div>
             )}
             <div className="notif-wrap">
@@ -322,7 +493,7 @@ export default function AdminDashboard() {
                   <div className="notif-backdrop" onClick={() => setShowNotifications(false)} />
                   <div className="notif-dropdown">
                     <div className="notif-dropdown-head">Pending approvals</div>
-                    <div className="notif-item"><div className="notif-item-dot" /><div><h5>Maria — new therapist</h5><p>Submitted ID &amp; certification</p><span>10 mins ago</span></div></div>
+                    <div className="notif-item"><div className="notif-item-dot" /><div><h5>Maria — new masseuse</h5><p>Submitted ID &amp; certification</p><span>10 mins ago</span></div></div>
                     <div className="notif-item"><div className="notif-item-dot" /><div><h5>Withdrawal — Chidi</h5><p>₦45,000 to bank</p><span>1 hour ago</span></div></div>
                     <div className="notif-item"><div className="notif-item-dot" /><div><h5>Refund request</h5><p>Booking MNN-BK-7710188</p><span>3 hours ago</span></div></div>
                   </div>
@@ -350,7 +521,7 @@ export default function AdminDashboard() {
             <div className="adm-coverage">
               <div className="adm-coverage-head">
                 <h3>Live coverage — Lagos</h3>
-                <span>Therapist availability by area, updated in real time</span>
+                <span>Masseuse availability by area, updated in real time</span>
               </div>
               <div className="adm-coverage-grid">
                 {AREAS.map((a) => (
@@ -402,7 +573,7 @@ export default function AdminDashboard() {
               <div className="adm-table-wrap">
                 <table className="adm-table">
                   <thead>
-                    <tr><th>Customer</th><th>Therapist</th><th>Date &amp; time</th><th>Area</th><th>Total</th><th>Status</th></tr>
+                    <tr><th>Customer</th><th>Masseuse</th><th>Date &amp; time</th><th>Area</th><th>Total</th><th>Status</th></tr>
                   </thead>
                   <tbody>
                     {filteredBookings.map((b) => (
@@ -435,6 +606,81 @@ export default function AdminDashboard() {
                 ))}
               </div>
               {filteredBookings.length === 0 && <p style={{ padding: 20, color: 'var(--text-mute)', fontSize: 13 }}>No bookings match this filter.</p>}
+            </div>
+          </>
+        )}
+
+        {tab === 'therapists' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
+              <button className="btn btn-red" style={{ width: 'auto' }} onClick={() => setShowAddTherapist(true)}>+ Add masseuse</button>
+            </div>
+            <div className="adm-promo-grid">
+              {therapists.map((t) => (
+                <div className="adm-promo-card" key={t.id}>
+                  <div className="adm-promo-top">
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{t.name}</span>
+                    <StatusPill status={t.available ? 'available' : 'busy'} />
+                  </div>
+                  <p className="adm-promo-desc">{t.specialties}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 4 }}>{t.email}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 12 }}>{t.phone} · {t.area}</p>
+                  <div className="adm-promo-foot">
+                    <span>★ {t.rating || '—'} ({t.reviews})</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {tab === 'users' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
+              <button className="btn btn-red" style={{ width: 'auto' }} onClick={() => setShowAddUser(true)}>+ Add user</button>
+            </div>
+            <div className="dash-panel">
+              <div className="adm-table-wrap">
+                <table className="adm-table">
+                  <thead>
+                    <tr><th>Name</th><th>Contact</th><th>Joined</th><th>Bookings</th><th>Status</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id}>
+                        <td className="adm-cell-person"><b>{u.name}</b><span>{u.email}</span></td>
+                        <td>{u.phone}</td>
+                        <td>{u.joined}</td>
+                        <td>{u.bookings}</td>
+                        <td><StatusPill status={u.status} /></td>
+                        <td>
+                          <button className="adm-resolve-link" onClick={() => toggleUserStatus(u.id)}>
+                            {u.status === 'active' ? 'Suspend' : 'Reactivate'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="adm-card-list">
+                {users.map((u) => (
+                  <div className="adm-row-card" key={u.id}>
+                    <div className="adm-row-card-top">
+                      <b>{u.name}</b>
+                      <StatusPill status={u.status} />
+                    </div>
+                    <p>{u.email}</p>
+                    <p>{u.phone} · Joined {u.joined}</p>
+                    <div className="adm-row-card-foot">
+                      <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>{u.bookings} bookings</span>
+                      <button className="adm-resolve-link" onClick={() => toggleUserStatus(u.id)}>
+                        {u.status === 'active' ? 'Suspend' : 'Reactivate'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         )}
@@ -541,7 +787,7 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {tab === 'reports' && (
+        {/* {tab === 'reports' && (
           <div className="adm-report-grid">
             <div className="dash-panel">
               <div className="dash-panel-head"><h3>Bookings this week</h3></div>
@@ -598,7 +844,7 @@ export default function AdminDashboard() {
               })}
             </div>
           </div>
-        )}
+        )} */}
       </main>
 
       {activeBooking && (
@@ -613,6 +859,18 @@ export default function AdminDashboard() {
         <CreatePromoModal
           onClose={() => setShowPromoModal(false)}
           onCreate={(promo) => { setPromoCodes([promo, ...promoCodes]); setShowPromoModal(false); }}
+        />
+      )}
+      {showAddTherapist && (
+        <CreateTherapistModal
+          onClose={() => setShowAddTherapist(false)}
+          onCreate={addTherapist}
+        />
+      )}
+      {showAddUser && (
+        <CreateUserModal
+          onClose={() => setShowAddUser(false)}
+          onCreate={addUser}
         />
       )}
     </div>

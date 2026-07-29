@@ -40,7 +40,7 @@ export default function Login() {
             <span className="logo-word">Massage<small>Now Now</small></span>
           </Link>
           <h2>Welcome back — <em>your next hour of quiet is waiting.</em></h2>
-          <p>Sign in to manage your bookings, track your therapist live, and pick up right where you left off.</p>
+          <p>Sign in to manage your bookings, track your masseuse live, and pick up right where you left off.</p>
         </div>
       </div>
       <div className="auth-form-side">

@@ -3,12 +3,12 @@ import Reveal from './Reveal';
 
 const ITEMS = [
   {
-    q: 'How fast can a therapist get to me?',
-    a: 'Most bookings are matched with a nearby, verified therapist in under 30 minutes across Lagos. You can also schedule a session in advance for a specific time.',
+    q: 'How fast can a masseuse get to me?',
+    a: 'Most bookings are matched with a nearby, verified masseuse in under 30 minutes across Lagos. You can also schedule a session in advance for a specific time.',
   },
   {
-    q: 'Is my therapist background-checked?',
-    a: 'Yes. Every therapist on MassageNowNow passes an identity check, certification review and an in-person skills assessment before they can accept bookings.',
+    q: 'Is my masseuse background-checked?',
+    a: 'Yes. Every masseuse on MassageNowNow passes an identity check, certification review and an in-person skills assessment before they can accept bookings.',
   },
   {
     q: 'What areas in Lagos do you cover?',

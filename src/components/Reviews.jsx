@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const REVIEWS = [
-  { quote: "Booked at 9pm, therapist was at my door in 20 minutes. Genuinely better than most spas I've paid double for.", name: 'Amara O.', loc: 'Lekki Phase 1' },
+  { quote: "Booked at 9pm, masseuse was at my door in 20 minutes. Genuinely better than most spas I've paid double for.", name: 'Amara O.', loc: 'Lekki Phase 1' },
   { quote: 'The live tracking took all the anxiety out of having someone come to my hotel room. Felt safe the whole time.', name: 'Tunde A.', loc: 'Victoria Island' },
   { quote: 'Diana has fixed my back more than three physios combined. I book her every other week now.', name: 'Ngozi E.', loc: 'Ikeja GRA' },
 ];

@@ -21,13 +21,13 @@ export default function Therapists() {
             <div className="eyebrow">Meet The Team</div>
             <h2 className="section-title">Hands you can <em>trust.</em></h2>
           </div>
-          <p>Every therapist completes background checks, certification review, and an in-person skills assessment.</p>
+          <p>Every masseuse completes background checks, certification review, and an in-person skills assessment.</p>
         </Reveal>
         <div className="therapist-grid">
           {THERAPISTS.map((t) => (
             <Reveal key={t.name} className="therapist-card">
               <div className="therapist-photo">
-                <img src={t.img} alt={`${t.name}, massage therapist`} />
+                <img src={t.img} alt={`${t.name}, masseuse`} />
                 <span className="therapist-badge">★ {t.rating}</span>
               </div>
               <div className="therapist-info">

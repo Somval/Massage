@@ -5,7 +5,7 @@ import tissue from '../images/Tissue.png';
 
 
 const POINTS = [
-  'Verified, background-checked therapists',
+  'Verified, background-checked masseuses',
   'Available 24 hours, 7 days a week',
   'Choose your treatment, pressure & duration',
   'Live tracking from booking to arrival',
@@ -32,7 +32,7 @@ export default function About() {
           <Reveal className="about-copy">
             <span className="eyebrow-script">About Us</span>
             <h2 className="section-title">Wellness that fits<br />into your day.</h2>
-            <p className="lead">MassageNowNow was built for people who take their recovery as seriously as their calendar. We match you with vetted, experienced therapists who bring the spa experience directly to your space — no commute, no waiting room.</p>
+            <p className="lead">MassageNowNow was built for people who take their recovery as seriously as their calendar. We match you with vetted, experienced masseuses who bring the spa experience directly to your space — no commute, no waiting room.</p>
             <ul className="about-list">
               {POINTS.map((p) => (
                 <li key={p}>

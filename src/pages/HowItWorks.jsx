@@ -10,7 +10,7 @@ const steps = [
   {
     n: '02',
     title: 'See who\'s available now',
-    desc: 'Browse verified therapists near you on the live map, filtered by specialty, rating, and distance.',
+    desc: 'Browse verified masseuses near you on the live map, filtered by specialty, rating, and distance.',
   },
   {
     n: '03',
@@ -20,7 +20,7 @@ const steps = [
   {
     n: '04',
     title: 'Relax — they come to you',
-    desc: 'Track your therapist arriving in real time, then settle in for your session.',
+    desc: 'Track your masseuse arriving in real time, then settle in for your session.',
   },
 ];
 

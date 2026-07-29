@@ -81,7 +81,7 @@ function BookingModal({ onClose, onCreate }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
         <h3>Book A Session</h3>
-        <p>Choose your therapist, treatment and time — we'll confirm within minutes.</p>
+        <p>Choose your masseuse, treatment and time — we'll confirm within minutes.</p>
         <form onSubmit={submit}>
           <div className="modal-field">
             <label>Masseuse</label>
@@ -553,8 +553,8 @@ export default function Dashboard() {
                 {tab === 'bookings' && 'View and manage all your massage appointments.'}
                 {tab === 'track' && "Watch your masseuse's live location and ETA."}
                 {tab === 'wallet' && 'Securely top up, pay for bookings, and track every transaction.'}
-                {tab === 'messages' && 'Stay connected with your therapists.'}
-                {tab === 'favorites' && 'Your saved therapists, ready to rebook.'}
+                {tab === 'messages' && 'Stay connected with your masseuses.'}
+                {tab === 'favorites' && 'Your saved masseuses, ready to rebook.'}
                 {tab === 'settings' && 'Manage your account, bookings and preferences.'}
               </p>
             </div>
@@ -862,7 +862,7 @@ export default function Dashboard() {
             <div className="empty-panel">
               <div className="ep-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 11.5a8.4 8.4 0 01-9 8.4A8.9 8.9 0 013 12a8.4 8.4 0 019-8.5 8.6 8.6 0 019 8z" /></svg></div>
               <h4>No messages yet</h4>
-              <p>Once a therapist accepts your booking, you'll be able to chat with them here to confirm details.</p>
+              <p>Once a masseuse accepts your booking, you'll be able to chat with them here to confirm details.</p>
             </div>
           </div>
         )}

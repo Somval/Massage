@@ -16,7 +16,7 @@ export default function Gallery() {
         <Reveal className="services-head">
           <span className="eyebrow-script">Inside The Studio</span>
           <h2 className="section-title">A Look Around</h2>
-          <p>A glimpse into the calm, considered spaces our therapists bring to you.</p>
+          <p>A glimpse into the calm, considered spaces our masseuses bring to you.</p>
         </Reveal>
         <div className="gallery-grid">
           {IMAGES.map((img, i) => (

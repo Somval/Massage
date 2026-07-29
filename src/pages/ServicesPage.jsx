@@ -36,7 +36,7 @@ export default function ServicesPage() {
           <Reveal className="services-head">
             <span className="eyebrow-script">Full Treatment Menu</span>
             <h2 className="section-title">Services & Pricing</h2>
-            <p>Every price includes therapist travel within central Lagos. Custom locations may incur a small logistics fee.</p>
+            <p>Every price includes masseuse travel within central Lagos. Custom locations may incur a small logistics fee.</p>
           </Reveal>
 
           {CATEGORIES.map((cat) => (
