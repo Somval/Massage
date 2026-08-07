@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import MasseuseDashboard from './pages/MasseuseDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function Shell() {
   const location = useLocation();
@@ -27,9 +28,9 @@ function Shell() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/masseuse" element={<MasseuseDashboard />} />
+        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['CLIENT']}><Dashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+<Route path="/masseuse" element={<ProtectedRoute allowedRoles={['THERAPIST']}><MasseuseDashboard /></ProtectedRoute>} />
       </Routes>
       {!bare && <Footer />}
     </>

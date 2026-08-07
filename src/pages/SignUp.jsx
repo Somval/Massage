@@ -1,9 +1,35 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logoMark from '../images/logo-mark.png';
 import Signup from '../images/sigup.png';
+import { register, saveSession, routeForRole } from '../lib/api';
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const [firstName, ...rest] = fullName.trim().split(' ');
+      const lastName = rest.join(' ') || firstName; // backend requires a lastName
+      const result = await register({ firstName, lastName, email: email.trim(), phone, password });
+      saveSession(result);
+      navigate(routeForRole(result.user.role));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-visual">
@@ -25,24 +51,31 @@ export default function SignUp() {
           </Link>
           <h2>Create Account</h2>
           <p>Join thousands enjoying on-demand wellness across Lagos.</p>
-          <form onSubmit={(e) => { e.preventDefault(); navigate('/dashboard'); }}>
+          {error && (
+            <div style={{ background: '#fdecea', color: '#b3261e', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 14 }}>
+              {error}
+            </div>
+          )}
+          <form onSubmit={submit}>
             <div className="auth-field">
               <label>Full Name</label>
-              <input type="text" placeholder="Enter your full name" required />
+              <input type="text" placeholder="Enter your full name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
             </div>
             <div className="auth-field">
               <label>Email Address</label>
-              <input type="email" placeholder="Enter your email address" required />
+              <input type="email" placeholder="Enter your email address" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="auth-field">
               <label>Phone Number</label>
-              <input type="tel" placeholder="Enter your phone number" required />
+              <input type="tel" placeholder="Enter your phone number" required value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="auth-field">
               <label>Password</label>
-              <input type="password" placeholder="Create a secure password" required />
+              <input type="password" placeholder="Create a secure password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <button type="submit" className="btn btn-red btn-block" style={{ marginTop: 6 }}>Create Account</button>
+            <button type="submit" className="btn btn-red btn-block" style={{ marginTop: 6 }} disabled={loading}>
+              {loading ? 'Creating account…' : 'Create Account'}
+            </button>
           </form>
           <div className="auth-divider">Or continue with</div>
           <div className="auth-oauth">

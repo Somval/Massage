@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import logoMark from '../images/logo-mark.png';
 import chidi from '../images/Chidi.jpeg';
 import ada from '../images/Ada.jpg';
 import ugo from '../images/ugo.jpg';
 import amaka from '../images/Amaka.jpg';
+import { clearSession, getCurrentUser, updateMyUser, getAdminSummary, getAdminBookings, getAdminTherapists, setTherapistApprovalAdmin, getAdminUsers, setUserStatusAdmin, register } from '../lib/api';
 import './AdminDashboard.css';
 
 const NAV = [
@@ -215,21 +216,11 @@ function CreateTherapistModal({ onClose, onCreate }) {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) {
-      setError('Name and email are required.');
+    if (!form.name.trim() || !form.email.trim() || form.password.trim().length < 8) {
+      setError('Name, email, and an 8+ character password are required.');
       return;
     }
-    onCreate({
-      id: Date.now(),
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim() || 'Not provided',
-      area: form.area,
-      specialties: form.specialties.trim() || 'Not specified yet',
-      rating: 0,
-      reviews: 0,
-      available: false,
-    });
+    onCreate(form);
   };
 
   return (
@@ -286,19 +277,11 @@ function CreateUserModal({ onClose, onCreate }) {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) {
-      setError('Name and email are required.');
+    if (!form.name.trim() || !form.email.trim() || form.password.trim().length < 8) {
+      setError('Name, email, and an 8+ character password are required.');
       return;
     }
-    onCreate({
-      id: Date.now(),
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim() || 'Not provided',
-      joined: 'Today',
-      bookings: 0,
-      status: 'active',
-    });
+    onCreate(form);
   };
 
   return (
@@ -337,23 +320,108 @@ function CreateUserModal({ onClose, onCreate }) {
 }
 
 export default function AdminDashboard() {
+   const navigate = useNavigate();
+   const [adminUser, setAdminUser] = useState(getCurrentUser());
+
+   const handleAdminPhotoChange = (e) => {
+     const file = e.target.files && e.target.files[0];
+     if (!file) return;
+     const reader = new FileReader();
+     reader.onload = () => {
+       updateMyUser({ avatarUrl: reader.result })
+         .then((updated) => {
+           localStorage.setItem('mnn_user', JSON.stringify(updated));
+           setAdminUser(updated);
+         })
+         .catch((err) => alert(err.message));
+     };
+     reader.readAsDataURL(file);
+   };
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tab, setTab] = useState('overview');
   const [showNotifications, setShowNotifications] = useState(false);
 
   // Bookings & scheduling
-  const [bookings, setBookings] = useState(INITIAL_ADMIN_BOOKINGS);
+  const [bookings, setBookings] = useState([]);
   const [bookingFilter, setBookingFilter] = useState('all');
   const [bookingQuery, setBookingQuery] = useState('');
   const [activeBooking, setActiveBooking] = useState(null);
 
   // Therapists
-  const [therapists, setTherapists] = useState(INITIAL_THERAPIST_ROSTER);
+  const [therapists, setTherapists] = useState([]);
   const [showAddTherapist, setShowAddTherapist] = useState(false);
 
   // Users
-  const [users, setUsers] = useState(INITIAL_USERS);
+  const [users, setUsers] = useState([]);
   const [showAddUser, setShowAddUser] = useState(false);
+
+  // Live summary numbers
+  const [summary, setSummary] = useState(null);
+
+  const BOOKING_STATUS_MAP = {
+    PENDING_MATCH: 'upcoming', REQUESTED: 'upcoming', ACCEPTED: 'upcoming',
+    EN_ROUTE: 'ongoing', IN_PROGRESS: 'ongoing',
+    COMPLETED: 'completed',
+    CANCELLED_BY_CLIENT: 'cancelled', CANCELLED_BY_THERAPIST: 'cancelled', DECLINED: 'cancelled', EXPIRED: 'cancelled',
+  };
+
+  const refreshAdminBookings = () => {
+    getAdminBookings().then((items) => {
+      setBookings(items.map((b) => ({
+        id: b.id,
+        reference: b.bookingRef,
+        customer: b.client ? `${b.client.firstName} ${b.client.lastName}` : 'Client',
+        therapist: b.therapist ? `${b.therapist.firstName} ${b.therapist.lastName}` : 'Unassigned',
+        service: b.service?.name || 'Massage',
+        date: new Date(b.scheduledStart).toLocaleDateString('en-NG', { weekday: 'short', day: 'numeric', month: 'short' }),
+        time: `${new Date(b.scheduledStart).toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })} – ${new Date(b.scheduledEnd).toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })}`,
+        area: b.locationAddress || '',
+        total: `₦${Number(b.total).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`,
+        status: BOOKING_STATUS_MAP[b.status] || 'upcoming',
+      })));
+    }).catch(() => {});
+  };
+
+  const refreshAdminTherapists = () => {
+    getAdminTherapists().then((items) => {
+      setTherapists(items.map((t) => ({
+        id: t.id,
+        name: t.user ? `${t.user.firstName} ${t.user.lastName}` : 'Masseuse',
+        email: t.user?.email || '',
+        phone: t.user?.phone || '',
+        specialties: Array.isArray(t.specialties) && t.specialties.length ? t.specialties.join(' · ') : 'Not set yet',
+        rating: t.ratingAverage,
+        reviews: t.ratingCount,
+        available: t.isAvailable,
+        approvalStatus: t.approvalStatus,
+      })));
+    }).catch(() => {});
+  };
+
+  const refreshAdminUsers = () => {
+    getAdminUsers().then((items) => {
+      setUsers(items.map((u) => ({
+        id: u.id,
+        name: `${u.firstName} ${u.lastName}`,
+        email: u.email,
+        phone: u.phone || 'Not provided',
+        joined: new Date(u.createdAt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }),
+        status: u.status === 'SUSPENDED' ? 'suspended' : 'active',
+      })));
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshAdminBookings();
+    refreshAdminTherapists();
+    refreshAdminUsers();
+    getAdminSummary().then(setSummary).catch(() => {});
+  }, []);
+
+  const setTherapistApproval = (id, approvalStatus) => {
+    setTherapistApprovalAdmin(id, approvalStatus).then(refreshAdminTherapists).catch((err) => alert(err.message));
+  };
 
   // Promotions
   const [promoCodes, setPromoCodes] = useState(INITIAL_PROMO_CODES);
@@ -385,18 +453,47 @@ export default function AdminDashboard() {
     setActiveBooking(null);
   };
 
-  const addTherapist = (t) => {
-    setTherapists([t, ...therapists]);
-    setShowAddTherapist(false);
+  const addTherapist = (form) => {
+    const nameParts = form.name.trim().split(' ');
+    const specialties = form.specialties.split(/[·,]/).map((s) => s.trim()).filter(Boolean);
+    register({
+      firstName: nameParts[0],
+      lastName: nameParts.slice(1).join(' ') || nameParts[0],
+      email: form.email.trim(),
+      phone: form.phone.trim() || undefined,
+      password: form.password.trim(),
+      role: 'therapist',
+      specialties: specialties.length ? specialties : undefined,
+    })
+      .then(() => {
+        refreshAdminTherapists();
+        setShowAddTherapist(false);
+      })
+      .catch((err) => alert(err.message));
   };
 
-  const addUser = (u) => {
-    setUsers([u, ...users]);
-    setShowAddUser(false);
+  const addUser = (form) => {
+    const nameParts = form.name.trim().split(' ');
+    register({
+      firstName: nameParts[0],
+      lastName: nameParts.slice(1).join(' ') || nameParts[0],
+      email: form.email.trim(),
+      phone: form.phone.trim() || undefined,
+      password: form.password.trim(),
+      role: 'client',
+    })
+      .then(() => {
+        refreshAdminUsers();
+        setShowAddUser(false);
+      })
+      .catch((err) => alert(err.message));
   };
 
-  const toggleUserStatus = (id) => {
-    setUsers(users.map((u) => (u.id === id ? { ...u, status: u.status === 'active' ? 'suspended' : 'active' } : u)));
+ const toggleUserStatus = (id) => {
+    const user = users.find((u) => u.id === id);
+    if (!user) return;
+    const nextStatus = user.status === 'active' ? 'suspended' : 'active';
+    setUserStatusAdmin(id, nextStatus).then(refreshAdminUsers).catch((err) => alert(err.message));
   };
 
   const togglePromo = (code) => {
@@ -413,11 +510,12 @@ export default function AdminDashboard() {
     setReplyDraft('');
   };
 
+  const completedCount = summary?.bookingsByStatus?.find((s) => s.status === 'COMPLETED')?.count || 0;
   const STATS = [
-    { label: 'Bookings today', value: '47', trend: '+12%', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
-    { label: 'Revenue today', value: '₦1.28m', trend: '+8%', icon: 'M4 7h16v12H4zM4 7V5h13M16 13h3' },
-    { label: 'Masseuses on duty', value: '18', trend: '18 of 24', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
-    { label: 'Payouts to review', value: '₦340k', trend: '6 pending', icon: 'M5 12l5 5 9-10' },
+    { label: 'Total bookings', value: summary ? String(summary.bookingsByStatus.reduce((sum, s) => sum + s.count, 0)) : '…', trend: '', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
+    { label: 'Total revenue', value: summary ? `₦${Number(summary.totalRevenue).toLocaleString('en-NG')}` : '…', trend: '', icon: 'M4 7h16v12H4zM4 7V5h13M16 13h3' },
+    { label: 'Total masseuses', value: summary ? String(summary.totalTherapists) : '…', trend: '', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
+    { label: 'Completed jobs', value: summary ? String(completedCount) : '…', trend: '', icon: 'M5 12l5 5 9-10' },
   ];
 
   return (
@@ -443,16 +541,23 @@ export default function AdminDashboard() {
         </nav>
         <div className="dash-sidebar-foot">
           <div className="dash-user" style={{ cursor: 'default' }}>
-            <div className="dash-user-avatar"><img src={ada} alt="Funke A." /></div>
+            <label htmlFor="admin-photo-input" style={{ position: 'relative', cursor: 'pointer' }}>
+              <div className="dash-user-avatar"><img src={adminUser?.avatarUrl || ada} alt={adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin'} /></div>
+            </label>
+            <input id="admin-photo-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAdminPhotoChange} />
             <div>
-              <h5>Funke A.</h5>
-              <span>funke@massagenownow.com</span>
+              <h5>{adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'Admin'}</h5>
+              <span>{adminUser?.email}</span>
               <span className="adm-badge-role">Operations admin</span>
             </div>
           </div>
-          <Link to="/" style={{ display: 'block', marginTop: 16, fontSize: 12.5, color: 'rgba(255,255,255,.45)', fontWeight: 600 }}>
+          <button
+            type="button"
+            onClick={() => { clearSession(); navigate('/'); }}
+            style={{ display: 'block', marginTop: 16, fontSize: 12.5, color: 'rgba(255,255,255,.45)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
             ← Sign out to site
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -624,10 +729,17 @@ export default function AdminDashboard() {
                   </div>
                   <p className="adm-promo-desc">{t.specialties}</p>
                   <p style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 4 }}>{t.email}</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 12 }}>{t.phone} · {t.area}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-mute)', marginBottom: 12 }}>{t.phone}</p>
                   <div className="adm-promo-foot">
                     <span>★ {t.rating || '—'} ({t.reviews})</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: t.approvalStatus === 'APPROVED' ? 'var(--app-green)' : t.approvalStatus === 'REJECTED' ? 'var(--red)' : 'var(--text-mute)' }}>{t.approvalStatus}</span>
                   </div>
+                  {t.approvalStatus === 'PENDING' && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <button className="btn btn-outline-red" style={{ width: 'auto', padding: '6px 14px' }} onClick={() => setTherapistApproval(t.id, 'rejected')}>Reject</button>
+                      <button className="btn btn-red" style={{ width: 'auto', padding: '6px 14px' }} onClick={() => setTherapistApproval(t.id, 'approved')}>Approve</button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -643,7 +755,7 @@ export default function AdminDashboard() {
               <div className="adm-table-wrap">
                 <table className="adm-table">
                   <thead>
-                    <tr><th>Name</th><th>Contact</th><th>Joined</th><th>Bookings</th><th>Status</th><th></th></tr>
+                    <tr><th>Name</th><th>Contact</th><th>Joined</th><th>Status</th><th></th></tr>
                   </thead>
                   <tbody>
                     {users.map((u) => (
@@ -651,7 +763,6 @@ export default function AdminDashboard() {
                         <td className="adm-cell-person"><b>{u.name}</b><span>{u.email}</span></td>
                         <td>{u.phone}</td>
                         <td>{u.joined}</td>
-                        <td>{u.bookings}</td>
                         <td><StatusPill status={u.status} /></td>
                         <td>
                           <button className="adm-resolve-link" onClick={() => toggleUserStatus(u.id)}>
@@ -673,7 +784,6 @@ export default function AdminDashboard() {
                     <p>{u.email}</p>
                     <p>{u.phone} · Joined {u.joined}</p>
                     <div className="adm-row-card-foot">
-                      <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>{u.bookings} bookings</span>
                       <button className="adm-resolve-link" onClick={() => toggleUserStatus(u.id)}>
                         {u.status === 'active' ? 'Suspend' : 'Reactivate'}
                       </button>

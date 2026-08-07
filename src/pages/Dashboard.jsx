@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Loader } from '@googlemaps/js-api-loader';
 import logoMark from '../images/logo-mark.png';
 import chidi from '../images/Chidi.jpeg';
 import ada from '../images/Ada.jpg';
 import ugo from '../images/ugo.jpg';
 import amaka from '../images/Amaka.jpg';
-
+import { clearSession, getCurrentUser, getWalletBalance, getServices, getBookings, createBookingRequest, topUpWallet, sendMoney, withdrawWallet, getWalletTransactions, toggleBookingFavorite, getConversations, startConversation, getMessages, sendMessage, getNearbyTherapists, updateMyUser, initializePaystackTopUp, verifyPaystackTopUp } from '../lib/api';
 const NAV = [
   { key: 'overview',  label: 'Overview',    icon: 'M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z' },
   { key: 'bookings',  label: 'My Bookings', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
@@ -64,8 +64,8 @@ const STATS = [
   { label: 'Favorite Masseuses', value: '4', icon: 'M20 12c0 4-3.6 7-8 9-4.4-2-8-5-8-9a4 4 0 018-1.5A4 4 0 0120 12z' },
 ];
 
-function BookingModal({ onClose, onCreate }) {
-  const [form, setForm] = useState({ therapist: THERAPISTS[0].name, service: TREATMENTS[0], date: '', time: '', location: '' });
+function BookingModal({ onClose, onCreate, services }) {
+  const [form, setForm] = useState({ therapist: THERAPISTS[0].name, serviceId: services[0]?.id || '', date: '', time: '', location: '' });
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -91,8 +91,8 @@ function BookingModal({ onClose, onCreate }) {
           </div>
           <div className="modal-field">
             <label>Treatment</label>
-            <select value={form.service} onChange={update('service')}>
-              {TREATMENTS.map((t) => <option key={t}>{t}</option>)}
+            <select value={form.serviceId} onChange={update('serviceId')}>
+              {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div className="modal-row">
@@ -192,8 +192,10 @@ function getPinOverlayClass(google) {
 function LagosMap({ masseuses, selected, onSelect }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
+  const googleRef = useRef(null);
   const overlaysRef = useRef({});
   const [mapError, setMapError] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
@@ -211,22 +213,35 @@ function LagosMap({ masseuses, selected, onSelect }) {
         zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
       });
       mapInstance.current = map;
-
-      const PinOverlay = getPinOverlayClass(google);
-      masseuses.forEach((m) => {
-        const html = `<div class="gmap-pin ${m.available ? 'available' : 'busy'}"><div class="gmap-pin-avatar"><img src="${m.img}" /></div><div class="gmap-pin-price"><b>${m.price}</b><span>${m.away}</span></div></div>`;
-        const overlay = new PinOverlay({
-          position: new google.maps.LatLng(m.lat, m.lng),
-          html,
-          onClick: () => onSelect(m),
-        });
-        overlay.setMap(map);
-        overlaysRef.current[m.name] = overlay;
-      });
+      googleRef.current = google;
+      setMapReady(true);
     }).catch(() => setMapError('load-failed'));
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // (Re)builds the pin overlays whenever the map becomes ready or the list
+  // of masseuses changes - e.g. once the real nearby-therapists fetch
+  // resolves, which happens after the map itself has already mounted.
+  useEffect(() => {
+    if (!mapReady || !mapInstance.current || !googleRef.current) return;
+    const google = googleRef.current;
+
+    Object.values(overlaysRef.current).forEach((overlay) => overlay.setMap(null));
+    overlaysRef.current = {};
+
+    const PinOverlay = getPinOverlayClass(google);
+    masseuses.forEach((m) => {
+      if (m.lat == null || m.lng == null) return;
+      const html = `<div class="gmap-pin ${m.available ? 'available' : 'busy'}"><div class="gmap-pin-avatar"><img src="${m.img}" /></div><div class="gmap-pin-price"><span>${m.away || ''}</span></div></div>`;
+      const overlay = new PinOverlay({
+        position: new google.maps.LatLng(m.lat, m.lng),
+        html,
+        onClick: () => onSelect(m),
+      });
+      overlay.setMap(mapInstance.current);
+      overlaysRef.current[m.name] = overlay;
+    });
+  }, [mapReady, masseuses]);
 
   useEffect(() => {
     if (mapInstance.current && selected) {
@@ -234,13 +249,6 @@ function LagosMap({ masseuses, selected, onSelect }) {
       mapInstance.current.setZoom(13);
     }
   }, [selected]);
-
-  useEffect(() => {
-    const visibleNames = new Set(masseuses.map((m) => m.name));
-    Object.entries(overlaysRef.current).forEach(([name, overlay]) => {
-      overlay.setVisible(visibleNames.has(name));
-    });
-  }, [masseuses]);
 
   if (mapError === 'missing-key') {
     return (
@@ -264,65 +272,101 @@ function LagosMap({ masseuses, selected, onSelect }) {
 function TrackingPanel({ booking }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
-  const [selected, setSelected] = useState(NEARBY_MASSEUSES[0]);
+  const [selected, setSelected] = useState(null);
+  const [nearby, setNearby] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = NEARBY_MASSEUSES.filter((m) => {
+  useEffect(() => {
+    getNearbyTherapists()
+      .then((items) => {
+        const mapped = items.map((t) => ({
+          name: `${t.firstName} ${t.lastName}`,
+          userId: t.userId,
+          rating: t.ratingAverage || 0,
+          reviews: t.ratingCount || 0,
+          years: `${t.yearsExperience || 0}+ Years Experience`,
+          tags: Array.isArray(t.specialties) && t.specialties.length ? t.specialties.join(' · ') : 'Massage therapist',
+          away: `${Number(t.distanceKm).toFixed(1)} km away`,
+          available: true,
+          img: ada,
+          area: '',
+          lat: t.latitude,
+          lng: t.longitude,
+        }));
+        setNearby(mapped);
+        setSelected(mapped[0] || null);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = nearby.filter((m) => {
     const matchesCategory = category === 'All' || m.tags.toLowerCase().includes(category.toLowerCase());
-    const matchesQuery = query.trim() === '' || m.name.toLowerCase().includes(query.toLowerCase()) || m.tags.toLowerCase().includes(query.toLowerCase()) || m.area.toLowerCase().includes(query.toLowerCase());
+    const matchesQuery = query.trim() === '' || m.name.toLowerCase().includes(query.toLowerCase()) || m.tags.toLowerCase().includes(query.toLowerCase());
     return matchesCategory && matchesQuery;
   });
 
+  const hasLiveBooking = booking && (booking.status === 'confirmed' || booking.status === 'ongoing');
+
   return (
     <div className="track-wrap">
-    <div className="dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
-      <div className="map-search-bar">
-        <div className="map-search-input">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.35-4.35" /></svg>
-          <input type="text" placeholder="Search masseuse, specialities, location..." value={query} onChange={(e) => setQuery(e.target.value)} />
+      {hasLiveBooking && (
+        <div className="dash-panel" style={{ padding: 16, marginBottom: 14 }}>
+          <h4 style={{ margin: 0, fontSize: 14.5 }}>Tracking {booking.name}</h4>
+          <p style={{ margin: '4px 0 0', fontSize: 12.5, color: 'var(--text-mute)' }}>
+            {booking.service} · {booking.date}
+          </p>
+          <p style={{ margin: '8px 0 0', fontSize: 12.5, color: 'var(--text-mute)' }}>
+            Live location hasn't been shared for this booking yet.
+          </p>
         </div>
-        <button className="map-filter-btn" aria-label="Filters">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
-        </button>
-      </div>
-
-      <div className="map-cat-row">
-        {MAP_CATEGORIES.map((c) => (
-          <button key={c} className={`map-cat-pill ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
-        ))}
-      </div>
-
-      <div className="map-legend">
-        <span><i className="dot available" /> Available</span>
-        <span><i className="dot busy" /> Busy</span>
-      </div>
-
-      <div className="track-map">
-        <LagosMap masseuses={filtered} selected={selected} onSelect={setSelected} />
-      </div>
-
-      <div className="map-sheet">
-        <div className="dash-panel-head" style={{ padding: '18px 20px 8px' }}>
-          <h3>Nearby Masseuses</h3>
-          <a href="#" onClick={(e) => { e.preventDefault(); }}>View All</a>
-        </div>
-        <p style={{ padding: '0 20px 10px', margin: 0, fontSize: 12.5, color: 'var(--text-mute)' }}>Available now</p>
-        {filtered.map((m) => (
-          <div className={`booking-list-item map-list-item ${selected?.name === m.name ? 'selected' : ''}`} key={m.name} onClick={() => setSelected(m)} style={{ cursor: 'pointer' }}>
-            <div className="bli-avatar"><img src={m.img} alt={m.name} /></div>
-            <div className="bli-body">
-              <h5>{m.name} <span className="bli-area">· {m.area}</span></h5>
-              <span>★ {m.rating} ({m.reviews}) · {m.years}</span>
-              <span style={{ display: 'block', marginTop: 2 }}>{m.tags}</span>
-            </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--red)', fontSize: 14 }}>{m.price}</div>
-              <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>{m.away}</span>
-              <button className="btn btn-red" style={{ padding: '7px 14px', marginTop: 8, fontSize: 11, width: 'auto' }} onClick={(e) => { e.stopPropagation(); }}>View Profile</button>
-            </div>
+      )}
+      <div className="dash-panel" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="map-search-bar">
+          <div className="map-search-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.35-4.35" /></svg>
+            <input type="text" placeholder="Search masseuse, specialities..." value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
-        ))}
+        </div>
+
+        <div className="map-cat-row">
+          {MAP_CATEGORIES.map((c) => (
+            <button key={c} className={`map-cat-pill ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
+          ))}
+        </div>
+
+        <div className="map-legend">
+          <span><i className="dot available" /> Available</span>
+        </div>
+
+        <div className="track-map">
+          <LagosMap masseuses={filtered} selected={selected} onSelect={setSelected} />
+        </div>
+
+        <div className="map-sheet">
+          <div className="dash-panel-head" style={{ padding: '18px 20px 8px' }}>
+            <h3>Nearby Masseuses</h3>
+          </div>
+          <p style={{ padding: '0 20px 10px', margin: 0, fontSize: 12.5, color: 'var(--text-mute)' }}>Available now</p>
+          {loading && <p style={{ padding: '0 20px 10px', fontSize: 12.5, color: 'var(--text-mute)' }}>Loading…</p>}
+          {!loading && filtered.length === 0 && (
+            <p style={{ padding: '0 20px 10px', fontSize: 12.5, color: 'var(--text-mute)' }}>No available masseuses nearby right now.</p>
+          )}
+          {filtered.map((m) => (
+            <div className={`booking-list-item map-list-item ${selected?.name === m.name ? 'selected' : ''}`} key={m.userId} onClick={() => setSelected(m)} style={{ cursor: 'pointer' }}>
+              <div className="bli-avatar"><img src={m.img} alt={m.name} /></div>
+              <div className="bli-body">
+                <h5>{m.name}</h5>
+                <span>★ {m.rating} ({m.reviews}) · {m.years}</span>
+                <span style={{ display: 'block', marginTop: 2 }}>{m.tags}</span>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>{m.away}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
@@ -341,7 +385,7 @@ const REWARDS = [
   { title: 'Premium Aromatherapy', cost: '6,000 pts', desc: 'Upgrade to our signature oil blend.', icon: 'M12 3c3 4 5 6.4 5 9a5 5 0 0 1-10 0c0-2.6 2-5 5-9z' },
 ];
 
-function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, onDone }) {
+function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, balance, onSubmit, submitting, error }) {
   if (mode === 'rewards') {
     return (
       <div className="modal-overlay" onClick={onClose}>
@@ -365,9 +409,9 @@ function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, 
                   <h5>{r.title}</h5>
                   <span>{r.desc}</span>
                 </div>
-                <div className="reward-cta">
+               <div className="reward-cta">
                   <b>{r.cost}</b>
-                  <button type="button" onClick={onDone}>Redeem</button>
+                  <button type="button" onClick={onClose}>Redeem</button>
                 </div>
               </div>
             ))}
@@ -377,7 +421,7 @@ function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, 
     );
   }
 
-  if (mode === 'send') {
+ if (mode === 'send') {
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -385,12 +429,11 @@ function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, 
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
           <h3>Send Money</h3>
-          <p>Transfer from your wallet balance of ₦45,600.00.</p>
+          <p>Transfer from your wallet balance of ₦{Number(balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}.</p>
           <div className="modal-field">
-            <label>Send To</label>
-            <select value={sendForm.to} onChange={(e) => setSendForm({ ...sendForm, to: e.target.value })}>
-              {THERAPISTS.map((t) => <option key={t.name}>{t.name}</option>)}
-            </select>
+            <label>Recipient email</label>
+            <input type="email" placeholder="name@example.com" value={sendForm.email}
+              onChange={(e) => setSendForm({ ...sendForm, email: e.target.value })} />
           </div>
           <div className="modal-field">
             <label>Amount</label>
@@ -405,7 +448,35 @@ function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, 
             <input type="text" placeholder="What's this for?" value={sendForm.note}
               onChange={(e) => setSendForm({ ...sendForm, note: e.target.value })} />
           </div>
-          <button className="btn btn-red btn-block" onClick={onDone}>Send ₦{sendForm.amount || '0'}</button>
+          {error && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+          <button className="btn btn-red btn-block" onClick={onSubmit} disabled={submitting}>
+            {submitting ? 'Sending…' : `Send ₦${sendForm.amount || '0'}`}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'withdraw') {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <h3>Withdraw</h3>
+          <p>Move funds out of your wallet balance of ₦{Number(balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}.</p>
+          <div className="modal-field">
+            <label>Amount</label>
+            <div className="amount-input">
+              <span>₦</span>
+              <input type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+          </div>
+          {error && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+          <button className="btn btn-red btn-block" onClick={onSubmit} disabled={submitting}>
+            {submitting ? 'Processing…' : `Withdraw ₦${amount || '0'}`}
+          </button>
         </div>
       </div>
     );
@@ -418,7 +489,7 @@ function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, 
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
         <h3>Top Up Wallet</h3>
-        <p>Add funds instantly. You get a 5% bonus on every top up.</p>
+        <p>Add funds to your wallet balance.</p>
         <div className="modal-field">
           <label>Amount</label>
           <div className="amount-input">
@@ -435,69 +506,309 @@ function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, 
             </button>
           ))}
         </div>
-        <div className="modal-field">
-          <label>Pay With</label>
-          <select>
-            <option>Card — •••• 4821</option>
-            <option>Bank Transfer</option>
-            <option>USSD</option>
-          </select>
-        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--text-mute)', marginBottom: 14 }}>
+          You'll choose card, bank transfer, or USSD on the next screen.
+        </p>
         {amount > 0 && (
           <div className="topup-summary">
             <div><span>Amount</span><b>₦{Number(amount).toLocaleString()}</b></div>
-            <div><span>Bonus (5%)</span><b style={{ color: 'var(--red)' }}>+₦{Math.round(amount * 0.05).toLocaleString()}</b></div>
-            <div className="topup-summary-total"><span>New Balance</span><b>₦{(45600 + Number(amount) * 1.05).toLocaleString()}</b></div>
+            <div className="topup-summary-total"><span>New Balance</span><b>₦{(Number(balance || 0) + Number(amount)).toLocaleString()}</b></div>
           </div>
         )}
-        <button className="btn btn-red btn-block" onClick={onDone}>Top Up ₦{amount || '0'}</button>
+        {error && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 10 }}>{error}</p>}
+        <button className="btn btn-red btn-block" onClick={onSubmit} disabled={submitting}>
+          {submitting ? 'Processing…' : `Top Up ₦${amount || '0'}`}
+        </button>
       </div>
     </div>
   );
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tab, setTab] = useState('overview');
   const [bookingFilter, setBookingFilter] = useState('upcoming');
-  const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
+  const [bookings, setBookings] = useState([]);
+  const [services, setServices] = useState([]);
+
+  const mapBooking = (b) => {
+    const statusMap = {
+      PENDING_MATCH: 'pending',
+      REQUESTED: 'pending',
+      ACCEPTED: 'confirmed',
+      EN_ROUTE: 'confirmed',
+      IN_PROGRESS: 'ongoing',
+      COMPLETED: 'completed',
+    };
+    return {
+      id: b.id,
+      favorite: b.favorite || false,
+      therapistUserId: b.therapist?.id || null,
+      name: b.therapist ? `${b.therapist.firstName} ${b.therapist.lastName}` : 'Awaiting match',
+      service: b.service?.name || 'Massage',
+      date: new Date(b.scheduledStart).toLocaleString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }),
+      location: `${b.locationLabel || ''}${b.locationLabel ? ' · ' : ''}${b.locationAddress || ''}`,
+      total: `₦${Number(b.total).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`,
+      status: statusMap[b.status] || null,
+      img: THERAPISTS[0].img,
+    };
+  };
+
+  const toggleFavorite = (id) => {
+    toggleBookingFavorite(id).then(refreshBookings).catch((err) => alert(err.message));
+  };
+
+  const refreshBookings = () => {
+    getBookings()
+      .then((items) => setBookings(items.map(mapBooking).filter((b) => b.status)))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshBookings();
+    getServices().then(setServices).catch(() => {});
+    refreshConversations();
+  }, []);
+
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
-  const [walletModal, setWalletModal] = useState(null); // 'topup' | 'send' | 'rewards'
-  const [topUpAmount, setTopUpAmount] = useState('');
-  const [sendForm, setSendForm] = useState({ to: THERAPISTS[0].name, amount: '', note: '' });
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
 
+useEffect(() => {
+    refreshWallet();
+
+    // Paystack inserts ?reference=... before the # fragment (proper URL
+    // construction), so it lands in window.location.search - not inside
+    // the hash the way a naive string-append would put it. Check there.
+    const searchParams = new URLSearchParams(window.location.search);
+    const reference = searchParams.get('reference');
+    if (reference) {
+      verifyPaystackTopUp(reference)
+        .then(() => {
+          refreshWallet();
+          setToast(true);
+          setTimeout(() => setToast(false), 2600);
+        })
+        .catch((err) => alert(err.message))
+        .finally(() => {
+          window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        });
+    }
+  }, []);
+
+  const formattedBalance = walletBalance == null
+    ? '…'
+    : `₦${Number(walletBalance).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const currentUser = getCurrentUser();
+
+  const handleClientPhotoChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateMyUser({ avatarUrl: reader.result })
+        .then((updated) => {
+          localStorage.setItem('mnn_user', JSON.stringify(updated));
+          window.location.reload();
+        })
+        .catch((err) => alert(err.message));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good Morning';
+    if (h < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  })();
+
+  const [walletModal, setWalletModal] = useState(null); // 'topup' | 'send' | 'withdraw' | 'rewards'
+  const [topUpAmount, setTopUpAmount] = useState('');
+  const [sendForm, setSendForm] = useState({ email: '', amount: '', note: '' });
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [walletSubmitting, setWalletSubmitting] = useState(false);
+  const [walletError, setWalletError] = useState('');
+
+  const [totalAdded, setTotalAdded] = useState(0);
+  const [totalSpent, setTotalSpent] = useState(0);
+
+  const refreshWallet = () => {
+    getWalletBalance().then((data) => setWalletBalance(data.walletBalance)).catch(() => {});
+    getWalletTransactions().then((items) => {
+      let added = 0;
+      let spent = 0;
+      items.forEach((t) => {
+        if (t.isCredit) added += Number(t.amount);
+        else spent += Number(t.amount);
+      });
+      setTotalAdded(added);
+      setTotalSpent(spent);
+      setTransactions(items.map((t) => ({
+        label: t.title,
+        date: new Date(t.createdAt).toLocaleString('en-NG', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }),
+        amount: `${t.isCredit ? '+' : '-'}₦${Number(t.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`,
+        type: t.isCredit ? 'in' : 'out',
+      })));
+    }).catch(() => {});
+  };
+  const submitWalletAction = () => {
+    setWalletError('');
+    setWalletSubmitting(true);
+
+    if (walletModal === 'topup') {
+      // Real Paystack checkout - leaves the site, comes back after payment,
+      // and gets verified server-side in the useEffect below.
+      const callbackUrl = `${window.location.origin}${window.location.pathname}#/dashboard`;
+      initializePaystackTopUp(Number(topUpAmount), callbackUrl)
+        .then(({ authorizationUrl }) => {
+          window.location.href = authorizationUrl;
+        })
+        .catch((err) => {
+          setWalletError(err.message);
+          setWalletSubmitting(false);
+        });
+      return;
+    }
+
+    let action;
+    if (walletModal === 'send') {
+      action = sendMoney(sendForm.email.trim(), Number(sendForm.amount));
+    } else if (walletModal === 'withdraw') {
+      action = withdrawWallet(Number(topUpAmount));
+    }
+
+    action
+      .then(() => {
+        setWalletModal(null);
+        setTopUpAmount('');
+        setSendForm({ email: '', amount: '', note: '' });
+        refreshWallet();
+        setToast(true);
+        setTimeout(() => setToast(false), 2600);
+      })
+      .catch((err) => setWalletError(err.message))
+      .finally(() => setWalletSubmitting(false));
+  };
   const upcoming = bookings.filter((b) => b.status === 'confirmed' || b.status === 'pending');
   const ongoing = bookings.filter((b) => b.status === 'ongoing');
   const completed = bookings.filter((b) => b.status === 'completed');
   const activeTrack = bookings.find((b) => b.status === 'confirmed') || null;
 
-  const createBooking = (form) => {
-    const therapist = THERAPISTS.find((t) => t.name === form.therapist);
-    const dateLabel = form.date && form.time
-      ? new Date(`${form.date}T${form.time}`).toLocaleString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
-      : `${form.date} · ${form.time}`;
-    const newBooking = {
-      id: Date.now(),
-      name: form.therapist,
-      service: form.service,
-      date: dateLabel,
-      location: form.location,
-      total: '₦24,000',
-      status: 'pending',
-      img: therapist ? therapist.img : THERAPISTS[0].img,
-    };
-    setBookings([newBooking, ...bookings]);
-    setShowModal(false);
-    setTab('bookings');
-    setBookingFilter('upcoming');
-    setToast(true);
-    setTimeout(() => setToast(false), 3200);
+ const createBooking = (form) => {
+    const service = services.find((s) => s.id === form.serviceId);
+    const start = new Date(`${form.date}T${form.time}`);
+    const end = new Date(start.getTime() + (service?.durationMinutes || 60) * 60000);
+
+    createBookingRequest({
+      serviceId: form.serviceId,
+      scheduledStart: start.toISOString(),
+      scheduledEnd: end.toISOString(),
+      location: {
+        label: 'Home',
+        addressLine: form.location,
+        // Placeholder coordinates (central Lagos) until a real map picker
+        // is wired up - fine for now since matching isn't live yet either.
+        lat: 6.5244,
+        lng: 3.3792,
+      },
+      notes: `Requested masseuse: ${form.therapist}`,
+    })
+      .then(() => {
+        refreshBookings();
+        setShowModal(false);
+        setTab('bookings');
+        setBookingFilter('upcoming');
+        setToast(true);
+        setTimeout(() => setToast(false), 3200);
+      })
+      .catch((err) => alert(err.message));
+  };
+  const bookingsForFilter = { upcoming, ongoing, completed, favourites: bookings.filter((b) => b.favorite) }[bookingFilter] || [];
+
+  const [featured, setFeatured] = useState([]);
+
+  useEffect(() => {
+    getNearbyTherapists()
+      .then((items) => {
+        const sorted = [...items].sort((a, b) => (b.ratingAverage || 0) - (a.ratingAverage || 0));
+        setFeatured(sorted.slice(0, 4).map((t) => ({
+          name: `${t.firstName} ${t.lastName}`,
+          userId: t.userId,
+          service: Array.isArray(t.specialties) && t.specialties.length ? t.specialties.join(' · ') : 'Massage therapist',
+          img: ada,
+        })));
+      })
+      .catch(() => {});
+  }, []);
+
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  const refreshConversations = () => {
+    getConversations().then(setConversations).catch(() => {});
   };
 
-  const bookingsForFilter = { upcoming, ongoing, completed, favourites: [] }[bookingFilter] || [];
+  const openConversation = (conversation) => {
+    setActiveConversation(conversation);
+    setLoadingMessages(true);
+    getMessages(conversation.id)
+      .then(setMessages)
+      .catch(() => {})
+      .finally(() => setLoadingMessages(false));
+  };
+
+  const messageTherapist = (therapistUserId) => {
+    if (!therapistUserId) return;
+    startConversation(therapistUserId)
+      .then((conversation) => {
+        refreshConversations();
+        setTab('messages');
+        openConversation(conversation);
+      })
+      .catch((err) => alert(err.message));
+  };
+
+  const sendChatMessage = () => {
+    if (!messageDraft.trim() || !activeConversation) return;
+    sendMessage(activeConversation.id, messageDraft.trim())
+      .then((msg) => {
+        setMessages((prev) => [...prev, msg]);
+        setMessageDraft('');
+      })
+      .catch((err) => alert(err.message));
+  };
+
+  const otherParticipant = (conversation) => {
+    const me = currentUser?.id;
+    const participants = conversation.participants || [];
+    const other = participants.find((p) => p.userId !== me) || participants[0];
+    return other?.user;
+  };
+
+  const [showNewMessage, setShowNewMessage] = useState(false);
+  const [nearbyForMessage, setNearbyForMessage] = useState([]);
+
+  const openNewMessagePicker = () => {
+    setShowNewMessage(true);
+    getNearbyTherapists().then(setNearbyForMessage).catch(() => setNearbyForMessage([]));
+  };
+
+  const startNewConversation = (therapistUserId) => {
+    setShowNewMessage(false);
+    startConversation(therapistUserId)
+      .then((conversation) => {
+        refreshConversations();
+        openConversation(conversation);
+      })
+      .catch((err) => alert(err.message));
+  };
 
   return (
     <div className="dash-shell">
@@ -528,15 +839,19 @@ export default function Dashboard() {
             className="dash-user"
             onClick={() => { setTab('settings'); setSidebarOpen(false); }}
           >
-            <div className="dash-user-avatar"><img src={ada} alt="Amara Okafor" /></div>
+            <div className="dash-user-avatar"><img src={currentUser?.avatarUrl || ada} alt={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Profile'} /></div>
             <div>
-              <h5>Amara Okafor</h5>
-              <span>amara@gmail.com</span>
+              <h5>{currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Guest'}</h5>
+              <span>{currentUser?.email || ''}</span>
             </div>
           </button>
-          <Link to="/" style={{ display: 'block', marginTop: 16, fontSize: 12.5, color: 'var(--text-mute)', fontWeight: 600 }}>
+          <button
+            type="button"
+            onClick={() => { clearSession(); navigate('/'); }}
+            style={{ display: 'block', marginTop: 16, fontSize: 12.5, color: 'var(--text-mute)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
             ← Sign out to site
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -547,7 +862,7 @@ export default function Dashboard() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
             </button>
             <div>
-              <h1>{tab === 'overview' ? 'Good Evening, Amara' : NAV.find((n) => n.key === tab)?.label}</h1>
+             <h1>{tab === 'overview' ? `${greeting}, ${currentUser?.firstName || 'there'}` : NAV.find((n) => n.key === tab)?.label}</h1>
               <p>
                 {tab === 'overview' && 'Lekki Phase 1, Lagos'}
                 {tab === 'bookings' && 'View and manage all your massage appointments.'}
@@ -606,8 +921,9 @@ export default function Dashboard() {
               <a href="#" onClick={(e) => { e.preventDefault(); setTab('favorites'); }}>See All</a>
             </div>
             <div className="featured-row" style={{ marginBottom: 28 }}>
-              {FEATURED.map((f) => (
-                <div className="featured-card" key={f.name} onClick={() => setShowModal(true)} style={{ cursor: 'pointer' }}>
+              {featured.length === 0 && <p style={{ color: 'var(--text-mute)', fontSize: 13 }}>No masseuses available right now.</p>}
+              {featured.map((f) => (
+                <div className="featured-card" key={f.userId} onClick={() => setShowModal(true)} style={{ cursor: 'pointer' }}>
                   <img src={f.img} alt={f.name} />
                   <div className="featured-card-info">
                     <h5>{f.name}</h5>
@@ -621,7 +937,7 @@ export default function Dashboard() {
               <div className="wallet-card-top">
                 <div>
                   <span>Wallet Balance</span>
-                  <b>{hideBalance ? '₦••••••' : '₦45,600.00'}</b>
+                  <b>{hideBalance ? '₦••••••' : formattedBalance}</b>
                   <button className="wallet-hide" onClick={() => setHideBalance(!hideBalance)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>
                     {hideBalance ? 'Show Balance' : 'Hide Balance'}
@@ -632,8 +948,8 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="wallet-mini-stats">
-                <div><span>Total Added</span><b>₦120,000.00</b></div>
-                <div><span>Total Spent</span><b>₦74,400.00</b></div>
+                <div><span>Total Added</span><b>₦{totalAdded.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</b></div>
+                <div><span>Total Spent</span><b>₦{totalSpent.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</b></div>
               </div>
               <div className="wallet-card-actions">
                 <a href="#" onClick={(e) => { e.preventDefault(); setTab('wallet'); }} className="primary">Top Up</a>
@@ -708,22 +1024,10 @@ export default function Dashboard() {
               <button className={`dash-tab-pill ${bookingFilter === 'upcoming' ? 'active' : ''}`} onClick={() => setBookingFilter('upcoming')}>Upcoming ({upcoming.length})</button>
               <button className={`dash-tab-pill ${bookingFilter === 'ongoing' ? 'active' : ''}`} onClick={() => setBookingFilter('ongoing')}>Ongoing ({ongoing.length})</button>
               <button className={`dash-tab-pill ${bookingFilter === 'completed' ? 'active' : ''}`} onClick={() => setBookingFilter('completed')}>Completed ({completed.length})</button>
-              <button className={`dash-tab-pill ${bookingFilter === 'favourites' ? 'active' : ''}`} onClick={() => setBookingFilter('favourites')}>Favourites ({THERAPISTS.length})</button>
+              <button className={`dash-tab-pill ${bookingFilter === 'favourites' ? 'active' : ''}`} onClick={() => setBookingFilter('favourites')}>Favourites ({bookings.filter((b) => b.favorite).length})</button>
             </div>
-            <div className={bookingFilter === 'favourites' ? 'dash-panel' : 'booking-card-list'}>
-              {bookingFilter === 'favourites' ? (
-                THERAPISTS.map((t) => (
-                  <div className="booking-list-item" key={t.name}>
-                    <div className="bli-avatar"><img src={t.img} alt={t.name} /></div>
-                    <div className="bli-body">
-                      <h5>{t.name}</h5>
-                      <span>Tap to book your next session</span>
-                    </div>
-                    <button className="btn btn-outline-dark" style={{ padding: '9px 18px' }} onClick={() => setShowModal(true)}>Book</button>
-                  </div>
-                ))
-              ) : (
-                <>
+            <div className="booking-card-list">
+              <>
                   {bookingsForFilter.length === 0 && (
                     <div className="empty-panel dash-panel">
                       <div className="ep-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 5h18M3 5a2 2 0 002 2h14a2 2 0 002-2M3 5v14a2 2 0 002 2h14a2 2 0 002-2V5" /></svg></div>
@@ -743,6 +1047,14 @@ export default function Dashboard() {
                             <div className="bc-info-head">
                               <h5>{b.name}</h5>
                               <span className={`bli-status ${b.status}`}>{b.status}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleFavorite(b.id)}
+                                aria-label="Toggle favorite"
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto', fontSize: 18, color: 'var(--red)' }}
+                              >
+                                {b.favorite ? '♥' : '♡'}
+                              </button>
                             </div>
                             <span className="bc-rating">★ {info.rating} ({info.reviews}) · {info.years}</span>
                             <span className="bc-tags">{b.service}</span>
@@ -769,7 +1081,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="booking-card-actions">
-                          <button className="btn btn-outline-dark">Message</button>
+                          <button className="btn btn-outline-dark" disabled={!b.therapistUserId} onClick={() => messageTherapist(b.therapistUserId)}>Message</button>
                           {(b.status === 'confirmed' || b.status === 'ongoing') ? (
                             <button className="btn btn-red" onClick={() => setTab('track')}>Track Live</button>
                           ) : (
@@ -779,8 +1091,7 @@ export default function Dashboard() {
                       </div>
                     );
                   })}
-                </>
-              )}
+              </>
             </div>
           </>
         )}
@@ -793,7 +1104,7 @@ export default function Dashboard() {
               <div className="wallet-card-top">
                 <div>
                   <span>Wallet Balance</span>
-                  <b>{hideBalance ? '₦••••••' : '₦45,600.00'}</b>
+                  <b>{hideBalance ? '₦••••••' : formattedBalance}</b>
                   <button className="wallet-hide" onClick={() => setHideBalance(!hideBalance)}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>
                     {hideBalance ? 'Show Balance' : 'Hide Balance'}
@@ -804,8 +1115,8 @@ export default function Dashboard() {
                 </button>
               </div>
               <div className="wallet-mini-stats">
-                <div><span>Total Added</span><b>₦120,000.00</b></div>
-                <div><span>Total Spent</span><b>₦74,400.00</b></div>
+                <div><span>Total Added</span><b>₦{totalAdded.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</b></div>
+                <div><span>Total Spent</span><b>₦{totalSpent.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</b></div>
               </div>
             </div>
 
@@ -814,9 +1125,13 @@ export default function Dashboard() {
                 <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></div>
                 <span>Top Up</span>
               </button>
-              <button type="button" className="wallet-action-sq" onClick={() => setWalletModal('send')}>
+             <button type="button" className="wallet-action-sq" onClick={() => setWalletModal('send')}>
                 <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.8 18-3.7-7.5L3 9.8z" /></svg></div>
                 <span>Send</span>
+              </button>
+              <button type="button" className="wallet-action-sq" onClick={() => setWalletModal('withdraw')}>
+                <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg></div>
+                <span>Withdraw</span>
               </button>
               <button type="button" className="wallet-action-sq" onClick={() => document.getElementById('txn-panel')?.scrollIntoView({ behavior: 'smooth' })}>
                 <div className="wa-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4" /></svg></div>
@@ -839,7 +1154,7 @@ export default function Dashboard() {
 
             <div className="dash-panel" id="txn-panel">
               <div className="dash-panel-head"><h3>Recent Transactions</h3></div>
-              {TRANSACTIONS.map((t, i) => (
+              {transactions.map((t, i) => (
                 <div className="txn-row" key={i}>
                   <div className={`txn-icon ${t.type}`}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -857,55 +1172,129 @@ export default function Dashboard() {
           </>
         )}
 
-        {tab === 'messages' && (
+        {tab === 'messages' && !activeConversation && (
           <div className="dash-panel">
-            <div className="empty-panel">
-              <div className="ep-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 11.5a8.4 8.4 0 01-9 8.4A8.9 8.9 0 013 12a8.4 8.4 0 019-8.5 8.6 8.6 0 019 8z" /></svg></div>
-              <h4>No messages yet</h4>
-              <p>Once a masseuse accepts your booking, you'll be able to chat with them here to confirm details.</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px 0' }}>
+              <button className="btn btn-red" style={{ width: 'auto' }} onClick={openNewMessagePicker}>+ New Message</button>
+            </div>
+            {conversations.length === 0 ? (
+              <div className="empty-panel">
+                <div className="ep-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 11.5a8.4 8.4 0 01-9 8.4A8.9 8.9 0 013 12a8.4 8.4 0 019-8.5 8.6 8.6 0 019 8z" /></svg></div>
+                <h4>No messages yet</h4>
+                <p>Tap "+ New Message" to start chatting with a nearby masseuse.</p>
+              </div>
+            ) : (
+              conversations.map((c) => {
+                const other = otherParticipant(c);
+                const name = other ? `${other.firstName} ${other.lastName}` : 'Conversation';
+                return (
+                  <div className="booking-list-item" key={c.id} style={{ cursor: 'pointer' }} onClick={() => openConversation(c)}>
+                    <div className="bli-avatar"><img src={ada} alt={name} /></div>
+                    <div className="bli-body">
+                      <h5>{name}</h5>
+                      <span>{c.lastMessagePreview || 'Say hello 👋'}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {tab === 'messages' && activeConversation && (
+          <div className="dash-panel">
+            <div className="dash-panel-head">
+              <h3>{(() => {
+                const other = otherParticipant(activeConversation);
+                return other ? `${other.firstName} ${other.lastName}` : 'Conversation';
+              })()}</h3>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActiveConversation(null); }}>← Back to messages</a>
+            </div>
+            <div style={{ padding: '10px 20px', minHeight: 200, maxHeight: 380, overflowY: 'auto' }}>
+              {loadingMessages ? (
+                <p style={{ color: 'var(--text-mute)', fontSize: 13 }}>Loading…</p>
+              ) : messages.length === 0 ? (
+                <p style={{ color: 'var(--text-mute)', fontSize: 13 }}>No messages yet — say hello 👋</p>
+              ) : (
+                messages.map((m) => {
+                  const isMine = m.senderId === currentUser?.id;
+                  return (
+                    <div key={m.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
+                      <div style={{
+                        maxWidth: '70%',
+                        padding: '8px 12px',
+                        borderRadius: 14,
+                        background: isMine ? 'var(--red)' : '#f2f2f2',
+                        color: isMine ? '#fff' : 'var(--ink)',
+                        fontSize: 13.5,
+                      }}>
+                        {m.body}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8, padding: '12px 20px 18px' }}>
+              <input
+                type="text"
+                placeholder="Type a message..."
+                value={messageDraft}
+                onChange={(e) => setMessageDraft(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+                style={{ flex: 1, padding: '10px 14px', borderRadius: 20, border: '1px solid #eee' }}
+              />
+              <button className="btn btn-red" style={{ width: 'auto', padding: '10px 20px' }} onClick={sendChatMessage}>Send</button>
             </div>
           </div>
         )}
 
         {tab === 'favorites' && (
           <div className="dash-panel">
-            <div className="dash-panel-head"><h3>Your Favorite Masseuses</h3></div>
-            {THERAPISTS.map((t) => (
-              <div className="booking-list-item" key={t.name}>
-                <div className="bli-avatar"><img src={t.img} alt={t.name} /></div>
+            <div className="dash-panel-head"><h3>Your Favorite Bookings</h3></div>
+            {bookings.filter((b) => b.favorite).length === 0 && (
+              <p style={{ padding: 20, color: 'var(--text-mute)', fontSize: 13.5 }}>
+                Tap the heart on any booking under "My Bookings" to save it here.
+              </p>
+            )}
+            {bookings.filter((b) => b.favorite).map((b) => (
+              <div className="booking-list-item" key={b.id}>
+                <div className="bli-avatar"><img src={b.img} alt={b.name} /></div>
                 <div className="bli-body">
-                  <h5>{t.name}</h5>
-                  <span>Tap to book your next session</span>
+                  <h5>{b.name}</h5>
+                  <span>{b.service} · {b.date}</span>
                 </div>
-                <button className="btn btn-outline-dark" style={{ padding: '9px 18px' }} onClick={() => setShowModal(true)}>Book</button>
+                <button className="btn btn-outline-dark" style={{ padding: '9px 18px' }} onClick={() => setShowModal(true)}>Book Again</button>
               </div>
             ))}
           </div>
         )}
-
         {tab === 'settings' && (
           <div className="dash-panel">
             <div className="profile-card">
-              <img src={ada} alt="Amara Okafor" />
+              <label htmlFor="client-photo-input" style={{ position: 'relative', cursor: 'pointer', display: 'inline-block' }}>
+                <img src={currentUser?.avatarUrl || ada} alt={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Profile photo'} />
+                <span style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--red)', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>✎</span>
+              </label>
+              <input id="client-photo-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleClientPhotoChange} />
               <div className="profile-card-body">
-                <h4>Amara Okafor</h4>
-                <p>+234 801 234 5678 · amara.okafor@gmail.com</p>
+                <h4>{currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Guest'}</h4>
+                <p>{currentUser?.phone || 'No phone on file'} · {currentUser?.email || ''}</p>
               </div>
             </div>
 
             <div className="benefits-banner">
               <div className="bb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2l2.5 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.5-.5z" /></svg></div>
               <div className="benefits-banner-body">
-                <h5>Wellness Rewards · 2,350 Points</h5>
-                <p>Earn points with every completed booking.</p>
+                <h5>Wellness Rewards · Coming soon</h5>
+                <p>No rewards system is live yet — this is a placeholder.</p>
               </div>
-              <a href="#">View Rewards</a>
             </div>
 
             <div className="activity-chips">
               <div className="activity-chip upcoming"><b>{upcoming.length}</b><span>Upcoming</span></div>
               <div className="activity-chip completed"><b>{completed.length}</b><span>Completed</span></div>
-              <div className="activity-chip favorites"><b>{THERAPISTS.length}</b><span>Favorites</span></div>
+              <div className="activity-chip favorites"><b>{bookings.filter((b) => b.favorite).length}</b><span>Favorites</span></div>
             </div>
 
             <div className="menu-section-title">Account</div>
@@ -952,7 +1341,36 @@ export default function Dashboard() {
         )}
       </main>
 
-      {showModal && <BookingModal onClose={() => setShowModal(false)} onCreate={createBooking} />}
+     {showModal && <BookingModal onClose={() => setShowModal(false)} onCreate={createBooking} services={services} />}
+      {showNewMessage && (
+        <div className="modal-overlay" onClick={() => setShowNewMessage(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowNewMessage(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>New Message</h3>
+            <p>Choose a nearby masseuse to start a conversation with.</p>
+            {nearbyForMessage.length === 0 ? (
+              <p style={{ color: 'var(--text-mute)', fontSize: 13.5 }}>No available masseuses right now.</p>
+            ) : (
+              nearbyForMessage.map((t) => (
+                <div
+                  className="booking-list-item"
+                  key={t.userId}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => startNewConversation(t.userId)}
+                >
+                  <div className="bli-avatar"><img src={ada} alt={t.firstName} /></div>
+                  <div className="bli-body">
+                    <h5>{t.firstName} {t.lastName}</h5>
+                    <span>{Array.isArray(t.specialties) && t.specialties.length ? t.specialties.join(' · ') : 'Massage therapist'}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
       {walletModal && (
         <WalletModal
           mode={walletModal}
@@ -960,8 +1378,11 @@ export default function Dashboard() {
           setAmount={setTopUpAmount}
           sendForm={sendForm}
           setSendForm={setSendForm}
-          onClose={() => setWalletModal(null)}
-          onDone={() => { setWalletModal(null); setToast(true); setTimeout(() => setToast(false), 2600); }}
+          balance={walletBalance}
+          submitting={walletSubmitting}
+          error={walletError}
+          onClose={() => { setWalletModal(null); setWalletError(''); }}
+          onSubmit={submitWalletAction}
         />
       )}
       {toast && (

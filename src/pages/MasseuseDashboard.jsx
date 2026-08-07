@@ -1,7 +1,13 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import logoMark from '../images/logo-mark.png';
 import chidi from '../images/Chidi.jpeg';
+import {
+  clearSession, getCurrentUser, getBookings, respondToBooking, updateBookingStatus,
+  setTherapistAvailability, getMyTherapistProfile, updateMyTherapistProfile, updateMyUser,
+  getWalletBalance, getWalletTransactions, withdrawWallet,
+  getConversations, startConversation, getMessages, sendMessage, updateMyLocation,
+} from '../lib/api';
 import './MasseuseDashboard.css';
 
 const NAV = [
@@ -12,30 +18,18 @@ const NAV = [
   { key: 'profile',  label: 'Profile & settings', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0' },
 ];
 
-const SCHEDULE = [
-  { customer: 'Amanda O.', service: 'Deep Tissue Massage', when: 'Today · 4:00 PM – 5:30 PM', area: 'Lekki Phase 1', earnings: '₦19,200', status: 'upcoming' },
-  { customer: 'Kunle T.', service: 'Aromatherapy', when: 'Today · 2:00 PM – 3:00 PM', area: 'Victoria Island', earnings: '₦20,800', status: 'ongoing' },
-  { customer: 'Ify N.', service: 'Sports Massage', when: 'Yesterday · 10:00 AM – 11:00 AM', area: 'Ikoyi', earnings: '₦20,000', status: 'completed' },
-  { customer: 'Sarah K.', service: 'Hot Stone', when: 'Sat, 18 Jul · 11:00 AM – 12:00 PM', area: 'Yaba', earnings: '₦21,600', status: 'completed' },
-];
+const STATUS_DISPLAY = {
+  ACCEPTED: 'upcoming',
+  EN_ROUTE: 'ongoing',
+  IN_PROGRESS: 'ongoing',
+  COMPLETED: 'completed',
+};
 
-const INITIAL_REQUESTS = [
-  { customer: 'Peter A.', service: 'Swedish Massage', when: 'Wed, 23 Jul · 5:00 PM – 6:00 PM', area: 'Ikeja GRA', distance: '3.2 km away', price: '₦19,200' },
-  { customer: 'Ngozi E.', service: 'Prenatal Massage', when: 'Thu, 24 Jul · 11:00 AM – 12:00 PM', area: 'Surulere', distance: '5.8 km away', price: '₦17,600' },
-];
-
-const EARNINGS_HISTORY = [
-  { title: 'Deep Tissue — Ify N.', subtitle: 'Yesterday · 10:00 AM', amount: '₦20,000', credit: true },
-  { title: 'Payout to bank', subtitle: 'Wed, 16 Jul · GTBank ****4471', amount: '₦85,000', credit: false },
-  { title: 'Hot Stone — Sarah K.', subtitle: 'Sat, 18 Jul · 11:00 AM', amount: '₦21,600', credit: true },
-  { title: 'Sports Massage — Chidi B.', subtitle: 'Thu, 16 Jul · 3:00 PM', amount: '₦20,000', credit: true },
-];
-
-const THREADS = [
-  { id: 1, client: 'Amanda O.', message: 'Great, see you at 4pm!', time: '10 mins ago', unread: 1 },
-  { id: 2, client: 'Kunle T.', message: 'Is the masseuse on the way?', time: '35 mins ago', unread: 2 },
-  { id: 3, client: 'Sarah K.', message: 'Thank you, that was wonderful.', time: 'Yesterday', unread: 0 },
-];
+const NEXT_STATUS = {
+  ACCEPTED: ['en_route', 'Mark en route'],
+  EN_ROUTE: ['in_progress', 'Start session'],
+  IN_PROGRESS: ['completed', 'Complete session'],
+};
 
 function Icon({ path, size = 14 }) {
   return (
@@ -46,51 +40,200 @@ function Icon({ path, size = 14 }) {
 }
 
 export default function MasseuseDashboard() {
+  const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tab, setTab] = useState('schedule');
-  const [online, setOnline] = useState(true);
-  const [requests, setRequests] = useState(INITIAL_REQUESTS);
-  const [activeThread, setActiveThread] = useState(null);
-  const [replies, setReplies] = useState({});
+  const [online, setOnline] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [schedule, setSchedule] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [earningsHistory, setEarningsHistory] = useState([]);
+
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [replyDraft, setReplyDraft] = useState('');
-  const [profileName, setProfileName] = useState('Chidi B.');
-  const [profileBio, setProfileBio] = useState('Sports & deep tissue specialist · 7+ years experience');
-  const [profilePhone, setProfilePhone] = useState('+234 801 234 5678');
-  const [profilePhoto, setProfilePhoto] = useState(chidi);
+
+  const [profileName, setProfileName] = useState(currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : '');
+  const [profileBio, setProfileBio] = useState('');
+  const [profilePhone, setProfilePhone] = useState(currentUser?.phone || '');
+  const [profilePhoto, setProfilePhoto] = useState(currentUser?.avatarUrl || chidi);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [profileSaved, setProfileSaved] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [expandedSection, setExpandedSection] = useState('personal');
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('');
+
+  const handleUpdateLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus("Your browser doesn't support location.");
+      return;
+    }
+    setUpdatingLocation(true);
+    setLocationStatus('');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        updateMyLocation(position.coords.latitude, position.coords.longitude)
+          .then(() => setLocationStatus('Location updated.'))
+          .catch((err) => setLocationStatus(err.message))
+          .finally(() => setUpdatingLocation(false));
+      },
+      () => {
+        setLocationStatus('Location permission denied.');
+        setUpdatingLocation(false);
+      }
+    );
+  };
+
+  const refreshBookings = () => {
+    setLoadingBookings(true);
+    getBookings()
+      .then((items) => {
+        setRequests(items.filter((b) => b.status === 'REQUESTED'));
+        setSchedule(
+          items
+            .filter((b) => STATUS_DISPLAY[b.status])
+            .map((b) => ({
+              id: b.id,
+              customer: b.client ? `${b.client.firstName} ${b.client.lastName}` : 'Client',
+              service: b.service?.name || 'Massage',
+              when: new Date(b.scheduledStart).toLocaleString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }),
+              area: b.locationAddress || '',
+              earnings: `₦${Number(b.therapistPayout).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`,
+              status: STATUS_DISPLAY[b.status],
+              rawStatus: b.status,
+            }))
+        );
+      })
+      .catch(() => {})
+      .finally(() => setLoadingBookings(false));
+  };
+
+  const refreshWallet = () => {
+    getWalletBalance().then((data) => setWalletBalance(data.walletBalance)).catch(() => {});
+    getWalletTransactions().then((items) => {
+      setEarningsHistory(items.map((t) => ({
+        title: t.title,
+        subtitle: new Date(t.createdAt).toLocaleString('en-NG', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+        amount: `₦${Number(t.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`,
+        credit: t.isCredit,
+      })));
+    }).catch(() => {});
+  };
+
+  const refreshConversations = () => {
+    getConversations().then(setConversations).catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshBookings();
+    refreshWallet();
+    refreshConversations();
+    getMyTherapistProfile()
+      .then((profile) => {
+        setOnline(profile.isAvailable);
+        setProfileBio(profile.bio || '');
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleOnline = () => {
+    const next = !online;
+    setOnline(next);
+    setTherapistAvailability(next).catch(() => setOnline(!next));
+  };
+
+  const respond = (id, accept) => {
+    respondToBooking(id, accept)
+      .then(refreshBookings)
+      .catch((err) => alert(err.message));
+  };
+
+  const advanceStatus = (id, nextStatus) => {
+    updateBookingStatus(id, nextStatus)
+      .then(() => {
+        refreshBookings();
+        refreshWallet();
+      })
+      .catch((err) => alert(err.message));
+  };
+
+  const requestPayout = () => {
+    if (!walletBalance || Number(walletBalance) <= 0) {
+      alert('No balance available to pay out.');
+      return;
+    }
+    withdrawWallet(Number(walletBalance))
+      .then(refreshWallet)
+      .catch((err) => alert(err.message));
+  };
+
+  const otherParticipant = (conversation) => {
+    const me = currentUser?.id;
+    const participants = conversation.participants || [];
+    const other = participants.find((p) => p.userId !== me) || participants[0];
+    return other?.user;
+  };
+
+  const openConversation = (conversation) => {
+    setActiveConversation(conversation);
+    getMessages(conversation.id).then(setMessages).catch(() => {});
+  };
+
+  const sendReply = () => {
+    if (!replyDraft.trim() || !activeConversation) return;
+    sendMessage(activeConversation.id, replyDraft.trim())
+      .then((msg) => {
+        setMessages((prev) => [...prev, msg]);
+        setReplyDraft('');
+      })
+      .catch((err) => alert(err.message));
+  };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    setProfilePhoto(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      setProfilePhoto(dataUrl);
+      updateMyUser({ avatarUrl: dataUrl })
+        .then((updated) => localStorage.setItem('mnn_user', JSON.stringify(updated)))
+        .catch((err) => alert(err.message));
+    };
+    reader.readAsDataURL(file);
   };
 
   const saveProfile = (e) => {
     e.preventDefault();
     setPasswordError('');
-    if (newPassword || confirmPassword || currentPassword) {
-      if (!currentPassword) return setPasswordError('Enter your current password to set a new one.');
-      if (newPassword.length < 8) return setPasswordError('New password must be at least 8 characters.');
-      if (newPassword !== confirmPassword) return setPasswordError('New password and confirmation do not match.');
+
+    if (expandedSection === 'password') {
+      if (currentPassword || newPassword || confirmPassword) {
+        setPasswordError("Password changes aren't available yet.");
+      }
+      return;
     }
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 3000);
-  };
 
-  const respond = (customer) => setRequests(requests.filter((r) => r.customer !== customer));
-
-  const sendReply = () => {
-    if (!replyDraft.trim() || !activeThread) return;
-    setReplies({ ...replies, [activeThread.id]: [...(replies[activeThread.id] || []), replyDraft.trim()] });
-    setReplyDraft('');
+    const nameParts = profileName.trim().split(' ');
+    updateMyUser({
+      firstName: nameParts[0],
+      lastName: nameParts.slice(1).join(' ') || nameParts[0],
+      phone: profilePhone.trim() || undefined,
+    })
+      .then(() => updateMyTherapistProfile({ bio: profileBio.trim() }))
+      .then(() => {
+        setProfileSaved(true);
+        setTimeout(() => setProfileSaved(false), 3000);
+      })
+      .catch((err) => alert(err.message));
   };
 
   return (
@@ -108,7 +251,7 @@ export default function MasseuseDashboard() {
         </div>
         <nav className="dash-nav">
           {NAV.map((n) => (
-            <a key={n.key} href="#" className={tab === n.key ? 'active' : ''} onClick={(e) => { e.preventDefault(); setTab(n.key); setActiveThread(null); setSidebarOpen(false); }}>
+            <a key={n.key} href="#" className={tab === n.key ? 'active' : ''} onClick={(e) => { e.preventDefault(); setTab(n.key); setActiveConversation(null); setSidebarOpen(false); }}>
               <span className="dash-nav-icon"><Icon path={n.icon} size={18} /></span>
               {n.label}
               {n.key === 'requests' && requests.length > 0 && (
@@ -121,13 +264,17 @@ export default function MasseuseDashboard() {
           <div className="dash-user" style={{ cursor: 'pointer' }} onClick={() => { setTab('profile'); setSidebarOpen(false); }}>
             <div className="dash-user-avatar"><img src={profilePhoto} alt={profileName} /></div>
             <div>
-              <h5>{profileName}</h5>
-              <span>chidi@massagenownow.com</span>
+              <h5>{profileName || 'Masseuse'}</h5>
+              <span>{currentUser?.email}</span>
             </div>
           </div>
-          <Link to="/" style={{ display: 'block', marginTop: 16, fontSize: 12.5, color: 'var(--text-mute)', fontWeight: 600 }}>
+          <button
+            type="button"
+            onClick={() => { clearSession(); navigate('/'); }}
+            style={{ display: 'block', marginTop: 16, fontSize: 12.5, color: 'var(--text-mute)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
             ← Sign out to site
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -161,75 +308,77 @@ export default function MasseuseDashboard() {
                 <p>{online ? 'Visible to nearby customers now' : 'Turn on to start receiving requests'}</p>
               </div>
               <label className="mss-switch">
-                <input type="checkbox" checked={online} onChange={() => setOnline(!online)} />
+                <input type="checkbox" checked={online} onChange={toggleOnline} />
                 <span className="mss-switch-track" />
               </label>
             </div>
 
-            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>Today</h3>
-            {SCHEDULE.filter((s) => s.when.startsWith('Today')).map((s, i) => (
-              <div className="mss-schedule-card" key={i}>
-                <div className="mss-schedule-top">
-                  <b>{s.customer}</b>
-                  <span className={`adm-status-pill ${s.status}`}>{s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span>
+            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>My Schedule</h3>
+            {loadingBookings && <p style={{ color: 'var(--text-mute)', fontSize: 13.5 }}>Loading…</p>}
+            {!loadingBookings && schedule.length === 0 && (
+              <p style={{ color: 'var(--text-mute)', fontSize: 13.5 }}>Nothing on your schedule yet.</p>
+            )}
+            {schedule.map((s) => {
+              const next = NEXT_STATUS[s.rawStatus];
+              return (
+                <div className="mss-schedule-card" key={s.id}>
+                  <div className="mss-schedule-top">
+                    <b>{s.customer}</b>
+                    <span className={`adm-status-pill ${s.status}`}>{s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span>
+                  </div>
+                  <p>{s.service}</p>
+                  <p>{s.when} · {s.area}</p>
+                  <div className="mss-schedule-foot">
+                    {next && (
+                      <button className="btn btn-red" style={{ width: 'auto', padding: '6px 14px' }} onClick={() => advanceStatus(s.id, next[0])}>
+                        {next[1]}
+                      </button>
+                    )}
+                    <b>{s.earnings}</b>
+                  </div>
                 </div>
-                <p>{s.service}</p>
-                <p>{s.when} · {s.area}</p>
-                <div className="mss-schedule-foot"><span /><b>{s.earnings}</b></div>
-              </div>
-            ))}
-
-            <h3 style={{ fontSize: 15, fontWeight: 800, margin: '18px 0 10px' }}>Earlier</h3>
-            {SCHEDULE.filter((s) => !s.when.startsWith('Today')).map((s, i) => (
-              <div className="mss-schedule-card" key={i}>
-                <div className="mss-schedule-top">
-                  <b>{s.customer}</b>
-                  <span className={`adm-status-pill ${s.status}`}>{s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span>
-                </div>
-                <p>{s.service}</p>
-                <p>{s.when} · {s.area}</p>
-                <div className="mss-schedule-foot"><span /><b>{s.earnings}</b></div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
 
         {tab === 'requests' && (
           requests.length === 0
             ? <p style={{ color: 'var(--text-mute)', fontSize: 13.5 }}>No new requests right now.</p>
-            : requests.map((r) => (
-              <div className="mss-request-card" key={r.customer}>
-                <div className="mss-request-top">
-                  <div className="mss-request-avatar">{r.customer.charAt(0)}</div>
-                  <div className="mss-request-top-body">
-                    <h5>{r.customer}</h5>
-                    <span>{r.service}</span>
+            : requests.map((r) => {
+              const client = r.client;
+              const name = client ? `${client.firstName} ${client.lastName}` : 'Client';
+              return (
+                <div className="mss-request-card" key={r.id}>
+                  <div className="mss-request-top">
+                    <div className="mss-request-avatar">{name.charAt(0)}</div>
+                    <div className="mss-request-top-body">
+                      <h5>{name}</h5>
+                      <span>{r.service?.name || 'Massage'}</span>
+                    </div>
+                    <div className="mss-request-price">₦{Number(r.therapistPayout).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</div>
                   </div>
-                  <div className="mss-request-price">{r.price}</div>
+                  <div className="mss-request-meta"><Icon path="M4 6h16v14H4zM4 10h16M9 3v4M15 3v4" /> {new Date(r.scheduledStart).toLocaleString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</div>
+                  <div className="mss-request-meta"><Icon path="M12 21c4-4.5 6-7.6 6-10.5A6 6 0 0 0 6 10.5C6 13.4 8 16.5 12 21zM12 12.5a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4z" /> {r.locationAddress}</div>
+                  <div className="mss-request-actions">
+                    <button className="btn btn-outline-red" onClick={() => respond(r.id, false)}>Decline</button>
+                    <button className="btn btn-red" onClick={() => respond(r.id, true)}>Accept</button>
+                  </div>
                 </div>
-                <div className="mss-request-meta"><Icon path="M4 6h16v14H4zM4 10h16M9 3v4M15 3v4" /> {r.when}</div>
-                <div className="mss-request-meta"><Icon path="M12 21c4-4.5 6-7.6 6-10.5A6 6 0 0 0 6 10.5C6 13.4 8 16.5 12 21zM12 12.5a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4z" /> {r.area} · {r.distance}</div>
-                <div className="mss-request-actions">
-                  <button className="btn btn-outline-red" onClick={() => respond(r.customer)}>Decline</button>
-                  <button className="btn btn-red" onClick={() => respond(r.customer)}>Accept</button>
-                </div>
-              </div>
-            ))
+              );
+            })
         )}
 
         {tab === 'earnings' && (
           <>
             <div className="mss-balance-card">
               <span>Available balance</span>
-              <b>₦85,000</b>
-              <button className="btn" style={{ background: '#fff', color: 'var(--red-deep)', width: 'auto', padding: '13px 26px' }}>Request payout</button>
+              <b>{walletBalance == null ? '…' : `₦${Number(walletBalance).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`}</b>
+              <button className="btn" style={{ background: '#fff', color: 'var(--red-deep)', width: 'auto', padding: '13px 26px' }} onClick={requestPayout}>Request payout</button>
             </div>
-            <div className="mss-stat-row">
-              <div className="dash-stat-card"><b>₦142,400</b><span>This week</span></div>
-              <div className="dash-stat-card"><b>9</b><span>Completed jobs</span></div>
-            </div>
-            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>History</h3>
-            {EARNINGS_HISTORY.map((t, i) => (
+            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 10, marginTop: 20 }}>History</h3>
+            {earningsHistory.length === 0 && <p style={{ color: 'var(--text-mute)', fontSize: 13.5 }}>No transactions yet.</p>}
+            {earningsHistory.map((t, i) => (
               <div className="mss-earn-row" key={i}>
                 <div className={`mss-earn-icon ${t.credit ? 'credit' : 'debit'}`}>
                   <Icon path={t.credit ? 'M12 19V5M5 12l7 7 7-7' : 'M12 5v14M5 12l7-7 7 7'} size={15} />
@@ -241,31 +390,41 @@ export default function MasseuseDashboard() {
           </>
         )}
 
-        {tab === 'messages' && !activeThread && (
+        {tab === 'messages' && !activeConversation && (
           <div className="dash-panel">
-            {THREADS.map((t) => (
-              <div className="mss-thread-item" key={t.id} onClick={() => setActiveThread(t)}>
-                <div className="mss-thread-avatar">{t.client.charAt(0)}</div>
-                <div className="mss-thread-body">
-                  <div className="mss-thread-top"><b>{t.client}</b><span>{t.time}</span></div>
-                  <p style={{ color: t.unread > 0 ? 'var(--ink)' : 'var(--text-mute)', fontWeight: t.unread > 0 ? 600 : 400 }}>{t.message}</p>
-                </div>
-                {t.unread > 0 && <div className="mss-unread-dot">{t.unread}</div>}
-              </div>
-            ))}
+            {conversations.length === 0 ? (
+              <p style={{ padding: 20, color: 'var(--text-mute)', fontSize: 13.5 }}>No conversations yet.</p>
+            ) : (
+              conversations.map((c) => {
+                const other = otherParticipant(c);
+                const name = other ? `${other.firstName} ${other.lastName}` : 'Client';
+                return (
+                  <div className="mss-thread-item" key={c.id} onClick={() => openConversation(c)}>
+                    <div className="mss-thread-avatar">{name.charAt(0)}</div>
+                    <div className="mss-thread-body">
+                      <div className="mss-thread-top"><b>{name}</b></div>
+                      <p style={{ color: 'var(--text-mute)' }}>{c.lastMessagePreview || 'Say hello 👋'}</p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
 
-        {tab === 'messages' && activeThread && (
+        {tab === 'messages' && activeConversation && (
           <div className="dash-panel">
             <div className="dash-panel-head">
-              <h3>{activeThread.client}</h3>
-              <a href="#" onClick={(e) => { e.preventDefault(); setActiveThread(null); }}>← Back to messages</a>
+              <h3>{(() => {
+                const other = otherParticipant(activeConversation);
+                return other ? `${other.firstName} ${other.lastName}` : 'Client';
+              })()}</h3>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActiveConversation(null); }}>← Back to messages</a>
             </div>
             <div className="mss-thread">
-              <div className="mss-bubble client">{activeThread.message}</div>
-              {(replies[activeThread.id] || []).map((r, i) => (
-                <div className="mss-bubble mine" key={i}>{r}</div>
+              {messages.length === 0 && <p style={{ color: 'var(--text-mute)', fontSize: 13 }}>No messages yet.</p>}
+              {messages.map((m) => (
+                <div className={`mss-bubble ${m.senderId === currentUser?.id ? 'mine' : 'client'}`} key={m.id}>{m.body}</div>
               ))}
             </div>
             <div className="mss-reply-row">
@@ -276,6 +435,7 @@ export default function MasseuseDashboard() {
             </div>
           </div>
         )}
+
         {tab === 'profile' && (
           <div className="mss-profile-wrap">
             <div className="dash-panel">
@@ -319,6 +479,14 @@ export default function MasseuseDashboard() {
                 </form>
               )}
 
+              <div className="menu-section-title">Location</div>
+              <div style={{ padding: '0 20px 20px' }}>
+                <button type="button" className="btn btn-outline-red" onClick={handleUpdateLocation} disabled={updatingLocation}>
+                  {updatingLocation ? 'Updating…' : '📍 Update My Location'}
+                </button>
+                {locationStatus && <p style={{ fontSize: 12.5, color: 'var(--text-mute)', marginTop: 8 }}>{locationStatus}</p>}
+              </div>
+
               <div className="menu-section-title">Security</div>
               <div className="menu-list-item" style={{ cursor: 'pointer' }} onClick={() => setExpandedSection(expandedSection === 'password' ? null : 'password')}>
                 <div className="ml-icon"><Icon path="M6 10V7a6 6 0 0 1 12 0v3M5 10h14v10H5z" size={17} /></div>
@@ -342,7 +510,6 @@ export default function MasseuseDashboard() {
                     </div>
                   </div>
                   {passwordError && <p style={{ color: 'var(--red)', fontSize: 12.5, marginBottom: 10 }}>{passwordError}</p>}
-                  {profileSaved && <p style={{ color: 'var(--app-green)', fontSize: 12.5, marginBottom: 10 }}>Profile updated.</p>}
                   <button type="submit" className="btn btn-red btn-block">Save changes</button>
                 </form>
               )}

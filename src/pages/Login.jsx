@@ -2,32 +2,28 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logoMark from '../images/logo-mark.png';
 import LoginImg from '../images/Logi.png';
-
-// Placeholder ops login, checked client-side against whatever is typed
-// into the form below. Swap this for a real server-side role check
-// before launch — anything shipped to the browser can be read by anyone
-// who opens devtools.
-const ADMIN_EMAIL = 'admin@massagenownow.com';
-const ADMIN_PASSWORD = '12345';
-const MASSEUSE_EMAIL = 'masseuse@massagenownow.com';
-const MASSEUSE_PASSWORD = '12345';
+import { login, saveSession, routeForRole } from '../lib/api';
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (email.trim() === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      navigate('/admin');
-      return;
+    setError('');
+    setLoading(true);
+    try {
+      const result = await login({ email: email.trim(), password });
+      saveSession(result);
+      navigate(routeForRole(result.user.role));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    if (email.trim() === MASSEUSE_EMAIL && password === MASSEUSE_PASSWORD) {
-      navigate('/masseuse');
-      return;
-    }
-    navigate('/dashboard');
   };
 
   return (
@@ -51,6 +47,11 @@ export default function Login() {
           </Link>
           <h2>Log In</h2>
           <p>Enter your details to access your dashboard.</p>
+          {error && (
+            <div style={{ background: '#fdecea', color: '#b3261e', padding: '10px 14px', borderRadius: 8, marginBottom: 14, fontSize: 14 }}>
+              {error}
+            </div>
+          )}
           <form onSubmit={submit}>
             <div className="auth-field">
               <label>Email Address</label>
@@ -66,7 +67,9 @@ export default function Login() {
               </label>
               <a href="#">Forgot Password?</a>
             </div>
-            <button type="submit" className="btn btn-red btn-block">Log In</button>
+            <button type="submit" className="btn btn-red btn-block" disabled={loading}>
+              {loading ? 'Logging in…' : 'Log In'}
+            </button>
           </form>
           <div className="auth-divider">Or continue with</div>
           <div className="auth-oauth">
