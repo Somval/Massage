@@ -1,6 +1,6 @@
 // Small fetch wrapper for talking to the MNN backend.
 // Reads the API base URL from the website's .env (VITE_API_URL).
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http:localhost:5000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 const TOKEN_KEY = 'mnn_access_token';
 const REFRESH_KEY = 'mnn_refresh_token';
@@ -108,6 +108,14 @@ export function routeForRole(role) {
 
 export function getWalletBalance() {
   return request('/wallet/balance');
+}
+
+export function getRewards() {
+  return request('/wallet/rewards');
+}
+
+export function redeemRewardPoints(points) {
+  return request('/wallet/rewards/redeem', { method: 'POST', body: JSON.stringify({ points }) });
 }
 
 export function getServices() {

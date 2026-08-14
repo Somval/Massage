@@ -6,7 +6,7 @@ import chidi from '../images/Chidi.jpeg';
 import ada from '../images/Ada.jpg';
 import ugo from '../images/ugo.jpg';
 import amaka from '../images/Amaka.jpg';
-import { clearSession, getCurrentUser, getWalletBalance, getServices, getBookings, createBookingRequest, topUpWallet, sendMoney, withdrawWallet, getWalletTransactions, toggleBookingFavorite, getConversations, startConversation, getMessages, sendMessage, getNearbyTherapists, updateMyUser, initializePaystackTopUp, verifyPaystackTopUp, getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/api';
+import { clearSession, getCurrentUser, getWalletBalance, getServices, getBookings, createBookingRequest, topUpWallet, sendMoney, withdrawWallet, getWalletTransactions, toggleBookingFavorite, getConversations, startConversation, getMessages, sendMessage, getNearbyTherapists, updateMyUser, initializePaystackTopUp, verifyPaystackTopUp, getNotifications, markNotificationRead, markAllNotificationsRead, getRewards, redeemRewardPoints } from '../lib/api';
 const NAV = [
   { key: 'overview',  label: 'Overview',    icon: 'M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z' },
   { key: 'bookings',  label: 'My Bookings', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
@@ -372,43 +372,57 @@ function TrackingPanel({ booking }) {
 }
 
 const TOPUP_PRESETS = [5000, 10000, 20000, 50000];
-const REWARDS = [
-  { title: 'Free 30-min Add-On', cost: '2,000 pts', desc: 'Extend any session by half an hour.', icon: 'M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z' },
-  { title: '₦5,000 Wallet Credit', cost: '4,500 pts', desc: 'Straight into your wallet balance.', icon: 'M4 7h16v12H4zM4 7V5h13M16 13h3' },
-  { title: 'Premium Aromatherapy', cost: '6,000 pts', desc: 'Upgrade to our signature oil blend.', icon: 'M12 3c3 4 5 6.4 5 9a5 5 0 0 1-10 0c0-2.6 2-5 5-9z' },
-];
+// Reward rates - must match the backend (rewards.service.js).
+const NAIRA_PER_POINT = 5; // 100 pts = ₦500
+const MIN_REDEEM_POINTS = 100;
 
-function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, balance, onSubmit, submitting, error }) {
+function WalletModal({ mode, onClose, amount, setAmount, sendForm, setSendForm, balance, onSubmit, submitting, error, rewardPoints, rewardsLoading, onRedeemRewards, redeeming, redeemError }) {
   if (mode === 'rewards') {
+    const canRedeem = rewardPoints >= MIN_REDEEM_POINTS;
+    const progress = Math.min(rewardPoints / MIN_REDEEM_POINTS, 1) * 100;
+    const pointsToNext = Math.max(MIN_REDEEM_POINTS - rewardPoints, 0);
+    const redeemableValue = rewardPoints * NAIRA_PER_POINT;
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-card" onClick={(e) => e.stopPropagation()}>
           <button className="modal-close" onClick={onClose} aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
-          <h3>Rewards</h3>
-          <p>You have <b style={{ color: 'var(--red)' }}>3,250 points</b>. Earn 100 points for every ₦1,000 spent.</p>
-          <div className="rewards-progress">
-            <div className="rewards-progress-bar"><span style={{ width: '72%' }} /></div>
-            <small>1,250 points to your next free session</small>
-          </div>
-          <div className="rewards-list">
-            {REWARDS.map((r) => (
-              <div className="reward-row" key={r.title}>
-                <div className="reward-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={r.icon} /></svg>
-                </div>
-                <div className="reward-body">
-                  <h5>{r.title}</h5>
-                  <span>{r.desc}</span>
-                </div>
-               <div className="reward-cta">
-                  <b>{r.cost}</b>
-                  <button type="button" onClick={onClose}>Redeem</button>
+          <h3>Wellness Rewards</h3>
+          {rewardsLoading ? (
+            <p>Loading your rewards…</p>
+          ) : (
+            <>
+              <p>You have <b style={{ color: 'var(--red)' }}>{rewardPoints.toLocaleString('en-NG')} points</b>. Earn 1 point for every ₦100 spent on a completed booking.</p>
+              <div className="rewards-progress">
+                <div className="rewards-progress-bar"><span style={{ width: `${progress}%` }} /></div>
+                <small>{canRedeem ? 'Ready to redeem' : `${pointsToNext} points to your first reward`}</small>
+              </div>
+              <div className="rewards-list">
+                <div className="reward-row">
+                  <div className="reward-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16v12H4zM4 7V5h13M16 13h3" /></svg>
+                  </div>
+                  <div className="reward-body">
+                    <h5>Wallet credit</h5>
+                    <span>Redeeming converts all your points to wallet credit at ₦{NAIRA_PER_POINT} each.</span>
+                  </div>
+                  <div className="reward-cta">
+                    <b>{redeemableValue.toLocaleString('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 })}</b>
+                    <button type="button" onClick={onRedeemRewards} disabled={!canRedeem || redeeming}>
+                      {redeeming ? 'Redeeming…' : canRedeem ? 'Redeem' : 'Not enough points'}
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+              {redeemError && <p style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 12 }}>{redeemError}</p>}
+              <p style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 14 }}>
+                {canRedeem
+                  ? 'Redeeming converts all your points to wallet credit.'
+                  : `You need at least ${MIN_REDEEM_POINTS} points to redeem. Keep booking to earn more.`}
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
@@ -793,6 +807,37 @@ useEffect(() => {
     markAllNotificationsRead()
       .then(() => setNotifications((list) => list.map((x) => ({ ...x, readAt: x.readAt || new Date().toISOString() }))))
       .catch(() => {});
+  };
+
+  // ---- Wellness Rewards (real backend data) ----
+  const [rewardPoints, setRewardPoints] = useState(0);
+  const [rewardsLoading, setRewardsLoading] = useState(true);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemError, setRedeemError] = useState('');
+
+  const refreshRewards = () => {
+    getRewards()
+      .then((data) => setRewardPoints(data.rewardPoints || 0))
+      .catch(() => {})
+      .finally(() => setRewardsLoading(false));
+  };
+
+  useEffect(() => { refreshRewards(); }, []);
+
+  const redeemRewards = () => {
+    setRedeemError('');
+    setRedeeming(true);
+    redeemRewardPoints(rewardPoints)
+      .then((data) => {
+        setRewardPoints(data.rewardPoints || 0);
+        setWalletBalance(data.walletBalance);
+        refreshWallet();
+        setToast(true);
+        setTimeout(() => setToast(false), 2600);
+        setWalletModal(null);
+      })
+      .catch((err) => setRedeemError(err.message || 'Could not redeem points.'))
+      .finally(() => setRedeeming(false));
   };
 
   // ---- Help center (static FAQ) ----
@@ -1464,11 +1509,15 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="benefits-banner">
+            <div className="benefits-banner" role="button" tabIndex={0} onClick={() => setWalletModal('rewards')} style={{ cursor: 'pointer' }}>
               <div className="bb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2l2.5 6.5L21 9l-5 4.5L17.5 21 12 17l-5.5 4L8 13.5 3 9l6.5-.5z" /></svg></div>
               <div className="benefits-banner-body">
-                <h5>Wellness Rewards · Coming soon</h5>
-                <p>No rewards system is live yet — this is a placeholder.</p>
+                <h5>Wellness Rewards</h5>
+                <p>
+                  {rewardsLoading
+                    ? 'Loading your points…'
+                    : `${rewardPoints.toLocaleString('en-NG')} points · worth ₦${(rewardPoints * NAIRA_PER_POINT).toLocaleString('en-NG')} in wallet credit`}
+                </p>
               </div>
             </div>
 
@@ -1887,8 +1936,13 @@ useEffect(() => {
           balance={walletBalance}
           submitting={walletSubmitting}
           error={walletError}
-          onClose={() => { setWalletModal(null); setWalletError(''); }}
+          onClose={() => { setWalletModal(null); setWalletError(''); setRedeemError(''); }}
           onSubmit={submitWalletAction}
+          rewardPoints={rewardPoints}
+          rewardsLoading={rewardsLoading}
+          onRedeemRewards={redeemRewards}
+          redeeming={redeeming}
+          redeemError={redeemError}
         />
       )}
       {toast && (
