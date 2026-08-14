@@ -176,6 +176,17 @@ export function getMessages(conversationId) {
 
 export function sendMessage(conversationId, body) {
   return request(`/messages/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ body }) });
+}
+export function getNotifications() {
+  return request('/notifications');
+}
+
+export function markNotificationRead(id) {
+  return request(`/notifications/${id}/read`, { method: 'PATCH', body: JSON.stringify({}) });
+}
+
+export function markAllNotificationsRead() {
+  return request('/notifications/read-all', { method: 'PATCH', body: JSON.stringify({}) });
 }export function getNearbyTherapists() {
   // Fixed reference point (Ikeja, Lagos) for now - same simplification used
   // everywhere else on the site/app until real device geolocation is wired in.
@@ -213,4 +224,12 @@ export function initializePaystackTopUp(amount, callbackUrl) {
 
 export function verifyPaystackTopUp(reference) {
   return request('/wallet/paystack/verify', { method: 'POST', body: JSON.stringify({ reference }) });
+}
+
+export function requestPasswordReset(email) {
+  return request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+}
+
+export function resetPasswordWithToken(token, newPassword) {
+  return request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword }) });
 }

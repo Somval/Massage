@@ -12,11 +12,12 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import MasseuseDashboard from './pages/MasseuseDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function Shell() {
   const location = useLocation();
-  const bare = ['/dashboard', '/login', '/signup', '/admin', '/masseuse'].includes(location.pathname);
-
+  const bare = ['/dashboard', '/login', '/signup', '/admin', '/masseuse', '/forgot-password', '/reset-password'].includes(location.pathname);
   return (
     <>
       {!bare && <Header />}
@@ -28,6 +29,8 @@ function Shell() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['CLIENT']}><Dashboard /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
 <Route path="/masseuse" element={<ProtectedRoute allowedRoles={['THERAPIST']}><MasseuseDashboard /></ProtectedRoute>} />

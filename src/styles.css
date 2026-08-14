@@ -426,7 +426,7 @@ footer{background:var(--ink);color:rgba(255,255,255,.65);padding:80px 0 0;}
 .activity-chip.favorites{background:#FBE9F1;}
 .activity-chip b{display:block;font-size:20px;font-weight:700;color:var(--ink);}
 .activity-chip span{font-size:11px;color:var(--text-soft);font-weight:600;}
-.menu-list-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--line);}
+.menu-list-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--line);cursor:pointer;}
 .menu-list-item:first-child{border-top:none;}
 .menu-list-item .ml-icon{width:38px;height:38px;border-radius:10px;background:var(--app-bg-deep);color:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .menu-list-item-body{flex:1;min-width:0;}

@@ -6,7 +6,7 @@ import chidi from '../images/Chidi.jpeg';
 import ada from '../images/Ada.jpg';
 import ugo from '../images/ugo.jpg';
 import amaka from '../images/Amaka.jpg';
-import { clearSession, getCurrentUser, getWalletBalance, getServices, getBookings, createBookingRequest, topUpWallet, sendMoney, withdrawWallet, getWalletTransactions, toggleBookingFavorite, getConversations, startConversation, getMessages, sendMessage, getNearbyTherapists, updateMyUser, initializePaystackTopUp, verifyPaystackTopUp } from '../lib/api';
+import { clearSession, getCurrentUser, getWalletBalance, getServices, getBookings, createBookingRequest, topUpWallet, sendMoney, withdrawWallet, getWalletTransactions, toggleBookingFavorite, getConversations, startConversation, getMessages, sendMessage, getNearbyTherapists, updateMyUser, initializePaystackTopUp, verifyPaystackTopUp, getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/api';
 const NAV = [
   { key: 'overview',  label: 'Overview',    icon: 'M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z' },
   { key: 'bookings',  label: 'My Bookings', icon: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4' },
@@ -371,13 +371,6 @@ function TrackingPanel({ booking }) {
   );
 }
 
-const NOTIFICATIONS = [
-  { title: 'Booking confirmed', body: 'Diana confirmed your Swedish Massage for Wed, 22 May.', time: '2h ago' },
-  { title: 'Masseuse on the way', body: 'Maria is on the way — 8 mins to Ikeja GRA.', time: '5h ago' },
-  { title: 'Wallet top up successful', body: '₦50,000 was added to your wallet.', time: '1d ago' },
-];
-
-
 const TOPUP_PRESETS = [5000, 10000, 20000, 50000];
 const REWARDS = [
   { title: 'Free 30-min Add-On', cost: '2,000 pts', desc: 'Extend any session by half an hour.', icon: 'M12 7v5l3 2M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z' },
@@ -602,6 +595,51 @@ useEffect(() => {
     ? '…'
     : `₦${Number(walletBalance).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const currentUser = getCurrentUser();
+  const referralCode = (() => {
+    const first = (currentUser?.firstName || 'MNN').toUpperCase();
+    const id = (currentUser?.id || '000000').replace(/-/g, '');
+    const tail = id.length >= 4 ? id.slice(0, 4).toUpperCase() : '0000';
+    const base = first.length >= 3 ? first.slice(0, 3) : first;
+    return `${base}${tail}`;
+  })();
+  const copyReferralCode = () => {
+    navigator.clipboard?.writeText(referralCode).then(() => {
+      setReferCopied(true);
+      setTimeout(() => setReferCopied(false), 2000);
+    });
+  };
+  const [locationLabel, setLocationLabel] = useState('Locating...');
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationLabel('Location unavailable');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          setLocationLabel('Current location');
+          return;
+        }
+        try {
+          const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+          );
+          const data = await res.json();
+          const result = data.results?.[0];
+          const area = result?.address_components?.find((c) => c.types.includes('sublocality') || c.types.includes('neighborhood'));
+          const city = result?.address_components?.find((c) => c.types.includes('locality'));
+          const label = [area?.long_name, city?.long_name].filter(Boolean).join(', ');
+          setLocationLabel(label || result?.formatted_address || 'Current location');
+        } catch {
+          setLocationLabel('Current location');
+        }
+      },
+      () => setLocationLabel('Location permission denied')
+    );
+  }, []);
 
   const handleClientPhotoChange = (e) => {
     const file = e.target.files && e.target.files[0];
@@ -635,6 +673,145 @@ useEffect(() => {
 
   const [totalAdded, setTotalAdded] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
+
+  const [personalInfoOpen, setPersonalInfoOpen] = useState(false);
+  const [personalInfoForm, setPersonalInfoForm] = useState({ firstName: '', lastName: '', phone: '' });
+  const [personalInfoSaving, setPersonalInfoSaving] = useState(false);
+  const [personalInfoError, setPersonalInfoError] = useState('');
+
+  const openPersonalInfo = () => {
+    setPersonalInfoError('');
+    setPersonalInfoForm({
+      firstName: currentUser?.firstName || '',
+      lastName: currentUser?.lastName || '',
+      phone: currentUser?.phone || '',
+    });
+    setPersonalInfoOpen(true);
+  };
+
+  const savePersonalInfo = (e) => {
+    e.preventDefault();
+    setPersonalInfoError('');
+    setPersonalInfoSaving(true);
+    updateMyUser({
+      firstName: personalInfoForm.firstName.trim(),
+      lastName: personalInfoForm.lastName.trim(),
+      ...(personalInfoForm.phone.trim() ? { phone: personalInfoForm.phone.trim() } : {}),
+    })
+      .then((updated) => {
+        localStorage.setItem('mnn_user', JSON.stringify(updated));
+        window.location.reload();
+      })
+      .catch((err) => {
+        setPersonalInfoError(err.message || 'Could not save changes.');
+        setPersonalInfoSaving(false);
+      });
+  };
+
+  // ---- Saved addresses (stored locally, same pattern as the app) ----
+  const ADDRESS_ICONS = [
+    { key: 'home', label: 'Home', path: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10' },
+    { key: 'office', label: 'Office', path: 'M4 21V7l8-4 8 4v14M9 21v-6h6v6' },
+    { key: 'apartment', label: 'Apartment', path: 'M4 21V4h16v17M8 8h1M8 12h1M8 16h1M15 8h1M15 12h1M15 16h1' },
+    { key: 'hotel', label: 'Hotel', path: 'M3 21V9l9-6 9 6v12M3 21h18M9 21v-5h6v5' },
+    { key: 'place', label: 'Other', path: 'M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z' },
+  ];
+  const ADDRESS_KEY = 'mnn_saved_addresses';
+  const [addresses, setAddresses] = useState([]);
+  const [addressesOpen, setAddressesOpen] = useState(false);
+  const [addressEditor, setAddressEditor] = useState(null); // null closed, {} new, {...existing} editing
+  const [addressForm, setAddressForm] = useState({ label: '', details: '', icon: 'home' });
+  const [addressError, setAddressError] = useState('');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ADDRESS_KEY);
+      if (raw) setAddresses(JSON.parse(raw));
+    } catch { /* ignore malformed cache */ }
+  }, []);
+
+  const persistAddresses = (next) => {
+    setAddresses(next);
+    localStorage.setItem(ADDRESS_KEY, JSON.stringify(next));
+  };
+
+  const openAddressEditor = (existing) => {
+    setAddressError('');
+    setAddressForm(existing ? { label: existing.label, details: existing.details, icon: existing.icon } : { label: '', details: '', icon: 'home' });
+    setAddressEditor(existing || {});
+  };
+
+  const saveAddress = (e) => {
+    e.preventDefault();
+    if (!addressForm.label.trim() || !addressForm.details.trim()) {
+      setAddressError('Add a label and the full address.');
+      return;
+    }
+    if (addressEditor?.id) {
+      persistAddresses(addresses.map((a) => (a.id === addressEditor.id ? { ...a, ...addressForm } : a)));
+    } else {
+      persistAddresses([...addresses, { id: Date.now().toString(), ...addressForm }]);
+    }
+    setAddressEditor(null);
+  };
+
+  const deleteAddress = (id) => {
+    if (!window.confirm('Remove this address from your saved addresses?')) return;
+    persistAddresses(addresses.filter((a) => a.id !== id));
+  };
+
+  // ---- Payment methods (informational — wallet is the real pay method) ----
+  const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
+
+  // ---- Refer & earn ----
+  const [referOpen, setReferOpen] = useState(false);
+  const [referCopied, setReferCopied] = useState(false);
+
+  // ---- Notifications (real backend data) ----
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
+
+  const refreshNotifications = () => {
+    getNotifications()
+      .then((items) => setNotifications(items))
+      .catch(() => {})
+      .finally(() => setNotificationsLoading(false));
+  };
+
+  useEffect(() => { refreshNotifications(); }, []);
+
+  const openNotification = (n) => {
+    if (!n.readAt) {
+      markNotificationRead(n.id)
+        .then(() => setNotifications((list) => list.map((x) => (x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x))))
+        .catch(() => {});
+    }
+  };
+
+  const markAllRead = () => {
+    markAllNotificationsRead()
+      .then(() => setNotifications((list) => list.map((x) => ({ ...x, readAt: x.readAt || new Date().toISOString() }))))
+      .catch(() => {});
+  };
+
+  // ---- Help center (static FAQ) ----
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
+  const FAQS = [
+    { q: 'How do I book a massage?', a: "From Overview, pick a therapist or a massage type, choose a time and your address, then confirm. Payment comes from your wallet balance, so top up first if you need to." },
+    { q: 'How does the wallet work?', a: 'Your wallet holds credit you top up via Paystack (card, bank transfer, or USSD). Bookings are paid from this balance, and any rewards you redeem are added to it.' },
+    { q: 'How do Wellness Rewards work?', a: 'You earn 1 point for every ₦100 spent on a completed booking. Points convert back to wallet credit at ₦5 each, with a 100-point minimum to redeem.' },
+    { q: 'Can I cancel or reschedule?', a: "Open the booking from My Bookings. If it hasn't started yet you can cancel or message your therapist to reschedule. Refund timing depends on how close to the appointment you cancel." },
+    { q: 'Is my payment information safe?', a: 'Card and bank details are handled entirely by Paystack during top-up. We never store your card number.' },
+    { q: 'How do I contact my therapist?', a: 'Once a booking is confirmed, use the Messages tab to chat with your therapist directly.' },
+  ];
+
+  // ---- Contact support (static channels) ----
+  const [contactOpen, setContactOpen] = useState(false);
+  const SUPPORT_EMAIL = 'support@massagenownow.com';
+  const SUPPORT_PHONE = '+2348000000000';
+  const WHATSAPP_NUMBER = '2348000000000';
 
   const refreshWallet = () => {
     getWalletBalance().then((data) => setWalletBalance(data.walletBalance)).catch(() => {});
@@ -864,7 +1041,7 @@ useEffect(() => {
             <div>
              <h1>{tab === 'overview' ? `${greeting}, ${currentUser?.firstName || 'there'}` : NAV.find((n) => n.key === tab)?.label}</h1>
               <p>
-                {tab === 'overview' && 'Lekki Phase 1, Lagos'}
+                {tab === 'overview' && locationLabel}
                 {tab === 'bookings' && 'View and manage all your massage appointments.'}
                 {tab === 'track' && "Watch your masseuse's live location and ETA."}
                 {tab === 'wallet' && 'Securely top up, pay for bookings, and track every transaction.'}
@@ -878,23 +1055,27 @@ useEffect(() => {
             <div className="notif-wrap">
               <button className="notif-bell" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}>
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0" /></svg>
-                <span className="notif-dot" />
+                {notifications.some((n) => !n.readAt) && <span className="notif-dot" />}
               </button>
               {showNotifications && (
                 <>
                   <div className="notif-backdrop" onClick={() => setShowNotifications(false)} />
                   <div className="notif-dropdown">
                     <div className="notif-dropdown-head">Notifications</div>
-                    {NOTIFICATIONS.map((n, i) => (
-                      <div className="notif-item" key={i}>
-                        <div className="notif-item-dot" />
-                        <div>
-                          <h5>{n.title}</h5>
-                          <p>{n.body}</p>
-                          <span>{n.time}</span>
+                    {notifications.length === 0 ? (
+                      <div className="notif-item"><div><p>You're all caught up.</p></div></div>
+                    ) : (
+                      notifications.slice(0, 6).map((n) => (
+                        <div className="notif-item" key={n.id} onClick={() => openNotification(n)} style={{ cursor: 'pointer' }}>
+                          <div className="notif-item-dot" style={{ opacity: n.readAt ? 0.25 : 1 }} />
+                          <div>
+                            <h5>{n.title}</h5>
+                            <p>{n.body}</p>
+                            <span>{new Date(n.createdAt).toLocaleString('en-NG', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </>
               )}
@@ -1298,41 +1479,41 @@ useEffect(() => {
             </div>
 
             <div className="menu-section-title">Account</div>
-            <div className="menu-list-item">
+            <div className="menu-list-item" role="button" tabIndex={0} onClick={openPersonalInfo}>
               <div className="ml-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="8" r="4" /><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" /></svg></div>
               <div className="menu-list-item-body"><h5>Personal Information</h5><span>Manage your personal details and contact info.</span></div>
               <svg className="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 6l6 6-6 6" /></svg>
             </div>
-            <div className="menu-list-item">
+            <div className="menu-list-item" role="button" tabIndex={0} onClick={() => setAddressesOpen(true)}>
               <div className="ml-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s7-6.5 7-11a7 7 0 10-14 0c0 4.5 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></svg></div>
               <div className="menu-list-item-body"><h5>Saved Addresses</h5><span>Manage your home, office and favorite locations.</span></div>
               <svg className="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 6l6 6-6 6" /></svg>
             </div>
-            <div className="menu-list-item">
+            <div className="menu-list-item" role="button" tabIndex={0} onClick={() => setPaymentInfoOpen(true)}>
               <div className="ml-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="14" rx="2.5" /><path d="M2 10h20" /></svg></div>
               <div className="menu-list-item-body"><h5>Payment Methods</h5><span>Cards, wallet and preferred payment options.</span></div>
               <svg className="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 6l6 6-6 6" /></svg>
             </div>
 
             <div className="menu-section-title">More</div>
-            <div className="menu-list-item">
+            <div className="menu-list-item" role="button" tabIndex={0} onClick={() => setReferOpen(true)}>
               <div className="ml-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 12c0 4-3.6 7-8 9-4.4-2-8-5-8-9a4 4 0 018-1.5A4 4 0 0120 12z" /></svg></div>
               <div className="menu-list-item-body"><h5>Refer &amp; Earn</h5><span>Invite friends and earn wallet rewards.</span></div>
               <svg className="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 6l6 6-6 6" /></svg>
             </div>
-            <div className="menu-list-item">
+            <div className="menu-list-item" role="button" tabIndex={0} onClick={() => setNotificationsPanelOpen(true)}>
               <div className="ml-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0" /></svg></div>
               <div className="menu-list-item-body"><h5>Notifications</h5><span>Control booking alerts, messages and promotions.</span></div>
               <svg className="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 6l6 6-6 6" /></svg>
             </div>
 
             <div className="menu-section-title">Support</div>
-            <div className="menu-list-item">
+            <div className="menu-list-item" role="button" tabIndex={0} onClick={() => setHelpOpen(true)}>
               <div className="ml-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 015 0c0 1.5-2 1.5-2 3.5M12 17h.01" /></svg></div>
               <div className="menu-list-item-body"><h5>Help Center</h5><span>Find answers to common questions.</span></div>
               <svg className="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 6l6 6-6 6" /></svg>
             </div>
-            <div className="menu-list-item">
+            <div className="menu-list-item" role="button" tabIndex={0} onClick={() => setContactOpen(true)}>
               <div className="ml-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.7a2 2 0 01-.4 2.1L8 9.9a16 16 0 006 6l1.4-1.4a2 2 0 012.1-.4c.9.3 1.8.5 2.7.6a2 2 0 011.8 2.2z" /></svg></div>
               <div className="menu-list-item-body"><h5>Contact Support</h5><span>Get help from our support team anytime.</span></div>
               <svg className="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 6l6 6-6 6" /></svg>
@@ -1340,6 +1521,331 @@ useEffect(() => {
           </div>
         )}
       </main>
+
+      {personalInfoOpen && (
+        <div className="modal-overlay" onClick={() => !personalInfoSaving && setPersonalInfoOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setPersonalInfoOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>Personal Information</h3>
+            <p>Manage your personal details and contact information.</p>
+            <form onSubmit={savePersonalInfo}>
+              <div className="modal-row">
+                <div className="modal-field">
+                  <label>First name</label>
+                  <input
+                    type="text"
+                    required
+                    value={personalInfoForm.firstName}
+                    onChange={(e) => setPersonalInfoForm((f) => ({ ...f, firstName: e.target.value }))}
+                  />
+                </div>
+                <div className="modal-field">
+                  <label>Last name</label>
+                  <input
+                    type="text"
+                    required
+                    value={personalInfoForm.lastName}
+                    onChange={(e) => setPersonalInfoForm((f) => ({ ...f, lastName: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="modal-field">
+                <label>Phone number</label>
+                <input
+                  type="tel"
+                  value={personalInfoForm.phone}
+                  onChange={(e) => setPersonalInfoForm((f) => ({ ...f, phone: e.target.value }))}
+                />
+              </div>
+              <div className="modal-field">
+                <label>Email</label>
+                <input type="email" value={currentUser?.email || ''} disabled />
+                <span style={{ fontSize: 11, color: 'var(--text-mute)' }}>Email can't be changed here yet.</span>
+              </div>
+              {personalInfoError && (
+                <p style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 4 }}>{personalInfoError}</p>
+              )}
+              <button type="submit" className="btn btn-red btn-block" style={{ marginTop: 6 }} disabled={personalInfoSaving}>
+                {personalInfoSaving ? 'Saving…' : 'Save changes'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {addressesOpen && !addressEditor && (
+        <div className="modal-overlay" onClick={() => setAddressesOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setAddressesOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>Saved Addresses</h3>
+            <p>Add your home, office, or a hotel so booking is one tap faster.</p>
+            {addresses.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--text-mute)', textAlign: 'center', padding: '24px 0' }}>No saved addresses yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+                {addresses.map((a) => {
+                  const icon = ADDRESS_ICONS.find((i) => i.key === a.icon) || ADDRESS_ICONS[0];
+                  return (
+                    <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 14, border: '1.5px solid var(--line)', borderRadius: 12 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(179,42,36,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="1.8"><path d={icon.path} /></svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h5 style={{ fontSize: 14, fontWeight: 700 }}>{a.label}</h5>
+                        <p style={{ fontSize: 12.5, color: 'var(--text-soft)' }}>{a.details}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button type="button" onClick={() => openAddressEditor(a)} style={{ fontSize: 11.5, color: 'var(--red)', fontWeight: 700 }}>Edit</button>
+                        <button type="button" onClick={() => deleteAddress(a.id)} style={{ fontSize: 11.5, color: 'var(--text-mute)', fontWeight: 700 }}>Delete</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button type="button" className="btn btn-red btn-block" onClick={() => openAddressEditor()}>+ Add address</button>
+          </div>
+        </div>
+      )}
+
+      {addressEditor && (
+        <div className="modal-overlay" onClick={() => setAddressEditor(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setAddressEditor(null)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>{addressEditor?.id ? 'Edit address' : 'Add address'}</h3>
+            <form onSubmit={saveAddress}>
+              <div className="modal-field">
+                <label>Label</label>
+                <input
+                  type="text"
+                  placeholder="Home, Office, Mum's place…"
+                  value={addressForm.label}
+                  onChange={(e) => setAddressForm((f) => ({ ...f, label: e.target.value }))}
+                />
+              </div>
+              <div className="modal-field">
+                <label>Icon</label>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {ADDRESS_ICONS.map((i) => (
+                    <button
+                      type="button"
+                      key={i.key}
+                      onClick={() => setAddressForm((f) => ({ ...f, icon: i.key }))}
+                      title={i.label}
+                      style={{
+                        width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: addressForm.icon === i.key ? 'var(--red)' : 'var(--cream-deep)',
+                      }}
+                    >
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={addressForm.icon === i.key ? '#fff' : 'var(--text-soft)'} strokeWidth="1.8"><path d={i.path} /></svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="modal-field">
+                <label>Full address</label>
+                <input
+                  type="text"
+                  placeholder="Street, area, city, landmark"
+                  value={addressForm.details}
+                  onChange={(e) => setAddressForm((f) => ({ ...f, details: e.target.value }))}
+                />
+              </div>
+              {addressError && <p style={{ color: 'var(--red)', fontSize: 12.5, marginTop: 4 }}>{addressError}</p>}
+              <button type="submit" className="btn btn-red btn-block" style={{ marginTop: 6 }}>Save address</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {paymentInfoOpen && (
+        <div className="modal-overlay" onClick={() => setPaymentInfoOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setPaymentInfoOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>Payment Methods</h3>
+            <p>Cards, wallet, and preferred payment options.</p>
+            <div style={{ padding: 18, borderRadius: 14, background: 'linear-gradient(135deg,#1B1E3D,#0F1128)', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5 }}>MassageNowNow Wallet</span>
+                <span style={{ marginLeft: 'auto', background: 'rgba(47,167,90,.2)', color: '#4ADE80', fontSize: 10.5, fontWeight: 700, padding: '3px 8px', borderRadius: 20 }}>Active</span>
+              </div>
+              <span style={{ color: 'rgba(255,255,255,.6)', fontSize: 11.5 }}>Balance</span>
+              <div style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>{formattedBalance}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 12, padding: 14, border: '1.5px solid var(--line)', borderRadius: 12 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(27,30,61,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B1E3D" strokeWidth="1.8"><rect x="2" y="6" width="20" height="14" rx="2.5" /><path d="M2 10h20" /></svg>
+                </div>
+                <div>
+                  <h5 style={{ fontSize: 13.5, fontWeight: 700 }}>Cards &amp; bank transfer</h5>
+                  <p style={{ fontSize: 12, color: 'var(--text-soft)' }}>Add money to your wallet with a card, bank transfer, or USSD through Paystack when you top up. Your bank details are handled by Paystack — we never store your card.</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 12, padding: 14, border: '1.5px solid var(--line)', borderRadius: 12 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(27,30,61,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B1E3D" strokeWidth="1.8"><rect x="3" y="11" width="18" height="10" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+                </div>
+                <div>
+                  <h5 style={{ fontSize: 13.5, fontWeight: 700 }}>How you pay for bookings</h5>
+                  <p style={{ fontSize: 12, color: 'var(--text-soft)' }}>Bookings are paid from your wallet balance, so top up once and pay in a tap. Rewards you redeem land here too.</p>
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 16, display: 'flex', gap: 10, padding: 12, background: 'rgba(201,162,39,.1)', borderRadius: 10 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-soft)' }}>Saving cards for one-tap re-use is coming soon.</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {referOpen && (
+        <div className="modal-overlay" onClick={() => setReferOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setReferOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>Refer &amp; Earn</h3>
+            <p>Invite friends and earn wallet rewards.</p>
+            <div style={{ padding: 22, borderRadius: 16, background: 'linear-gradient(135deg,var(--red),var(--red-deep))', textAlign: 'center', marginBottom: 18 }}>
+              <p style={{ color: '#fff', fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Give ₦1,000, get ₦1,000</p>
+              <p style={{ color: 'rgba(255,255,255,.8)', fontSize: 12.5 }}>Your friend gets ₦1,000 off their first booking, and you get ₦1,000 in wallet credit once they complete it.</p>
+            </div>
+            <label style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: 'var(--text-soft)', marginBottom: 8 }}>Your referral code</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px', border: '1.5px solid var(--line)', borderRadius: 12, marginBottom: 14 }}>
+              <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: 3, flex: 1 }}>{referralCode}</span>
+              <button type="button" onClick={copyReferralCode} style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--red)', padding: '8px 14px', background: 'rgba(179,42,36,.1)', borderRadius: 10 }}>
+                {referCopied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                ['Share your code', 'Send it to friends by WhatsApp, SMS, or social.'],
+                ['They book', 'Your friend enters the code and gets ₦1,000 off.'],
+                ['You both earn', 'You get ₦1,000 credit after their first session.'],
+              ].map(([title, sub], i) => (
+                <div key={title} style={{ display: 'flex', gap: 12 }}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(179,42,36,.1)', color: 'var(--red)', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                  <div>
+                    <h5 style={{ fontSize: 13, fontWeight: 700 }}>{title}</h5>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-soft)' }}>{sub}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 14 }}>Referral rewards are applied by our team after a completed booking. Terms may apply.</p>
+          </div>
+        </div>
+      )}
+
+      {notificationsPanelOpen && (
+        <div className="modal-overlay" onClick={() => setNotificationsPanelOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setNotificationsPanelOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>Notifications</h3>
+            <p>Booking alerts, payments, and reward updates.</p>
+            {notifications.some((n) => !n.readAt) && (
+              <button type="button" onClick={markAllRead} style={{ fontSize: 12, fontWeight: 700, color: 'var(--red)', marginBottom: 14 }}>Mark all as read</button>
+            )}
+            {notificationsLoading ? (
+              <p style={{ fontSize: 13, color: 'var(--text-mute)', textAlign: 'center', padding: '24px 0' }}>Loading…</p>
+            ) : notifications.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--text-mute)', textAlign: 'center', padding: '24px 0' }}>You're all caught up.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => openNotification(n)}
+                    style={{ display: 'flex', gap: 10, padding: 12, border: '1.5px solid var(--line)', borderRadius: 12, cursor: 'pointer', background: n.readAt ? 'transparent' : 'rgba(179,42,36,.04)' }}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: n.readAt ? 'var(--line)' : 'var(--red)', marginTop: 5, flexShrink: 0 }} />
+                    <div>
+                      <h5 style={{ fontSize: 13, fontWeight: 700 }}>{n.title}</h5>
+                      <p style={{ fontSize: 12, color: 'var(--text-soft)' }}>{n.body}</p>
+                      <span style={{ fontSize: 10.5, color: 'var(--text-mute)' }}>{new Date(n.createdAt).toLocaleString('en-NG', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {helpOpen && (
+        <div className="modal-overlay" onClick={() => setHelpOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setHelpOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>Help Center</h3>
+            <p>Find answers to common questions.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {FAQS.map((f, i) => (
+                <div key={f.q} style={{ border: '1.5px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    style={{ width: '100%', textAlign: 'left', padding: '14px 16px', fontSize: 13.5, fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    {f.q}
+                    <span style={{ color: 'var(--red)', fontSize: 16 }}>{openFaq === i ? '−' : '+'}</span>
+                  </button>
+                  {openFaq === i && (
+                    <p style={{ padding: '0 16px 16px', fontSize: 12.5, color: 'var(--text-soft)', lineHeight: 1.5 }}>{f.a}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {contactOpen && (
+        <div className="modal-overlay" onClick={() => setContactOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setContactOpen(false)} aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+            <h3>Contact Support</h3>
+            <p>Our team is here to help. Reach us any way you like — we usually reply within a few hours.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, border: '1.5px solid var(--line)', borderRadius: 12 }}>
+                <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(37,211,102,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#25D366" strokeWidth="1.8"><path d="M4 5h16v11H8l-4 4z" /></svg>
+                </span>
+                <span><h5 style={{ fontSize: 14, fontWeight: 700 }}>WhatsApp</h5><span style={{ fontSize: 12, color: 'var(--text-soft)' }}>Fastest way to reach us</span></span>
+              </a>
+              <a href={`mailto:${SUPPORT_EMAIL}?subject=MassageNowNow support`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, border: '1.5px solid var(--line)', borderRadius: 12 }}>
+                <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(179,42,36,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 7l10 6 10-6" /></svg>
+                </span>
+                <span><h5 style={{ fontSize: 14, fontWeight: 700 }}>Email</h5><span style={{ fontSize: 12, color: 'var(--text-soft)' }}>{SUPPORT_EMAIL}</span></span>
+              </a>
+              <a href={`tel:${SUPPORT_PHONE}`} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, border: '1.5px solid var(--line)', borderRadius: 12 }}>
+                <span style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(27,30,61,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1E3D" strokeWidth="1.8"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.7a2 2 0 01-.4 2.1L8 9.9a16 16 0 006 6l1.4-1.4a2 2 0 012.1-.4c.9.3 1.8.5 2.7.6a2 2 0 011.8 2.2z" /></svg>
+                </span>
+                <span><h5 style={{ fontSize: 14, fontWeight: 700 }}>Call us</h5><span style={{ fontSize: 12, color: 'var(--text-soft)' }}>{SUPPORT_PHONE}</span></span>
+              </a>
+            </div>
+            <div style={{ marginTop: 18, padding: 12, border: '1.5px solid var(--line)', borderRadius: 12, fontSize: 12.5, color: 'var(--text-soft)' }}>
+              Support hours: Mon–Sun, 8am – 10pm WAT
+            </div>
+          </div>
+        </div>
+      )}
 
      {showModal && <BookingModal onClose={() => setShowModal(false)} onCreate={createBooking} services={services} />}
       {showNewMessage && (
